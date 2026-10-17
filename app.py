@@ -1,227 +1,371 @@
 import streamlit as st
-import pandas as pd
-import numpy as np
-import plotly.graph_objects as go
-import time
+import streamlit.components.v1 as components
 
-# 1. Page Config
 st.set_page_config(
     page_title="Order Block Terminal Pro",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
-# 2. Exact Order-Block.com Futuristic Theme & Glow CSS
+# Hide Streamlit default UI elements
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-    
-    .stApp {
-        background-color: #05070c;
-        color: #f3f4f6;
-        font-family: 'Inter', sans-serif;
-    }
-    
-    /* Top Header Navbar */
-    .top-nav {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        background: #0b0f19;
-        padding: 10px 16px;
-        border-radius: 8px;
-        border: 1px solid #1a2234;
-        margin-bottom: 15px;
-    }
-    
-    .nav-tabs {
-        display: flex;
-        gap: 18px;
-        font-size: 13px;
-        font-weight: 600;
-    }
-    
-    .tab-active-green { color: #00ff87; border-bottom: 2px solid #00ff87; padding-bottom: 4px; text-shadow: 0 0 8px rgba(0,255,135,0.6); }
-    .tab-active-red { color: #ff1744; border-bottom: 2px solid #ff1744; padding-bottom: 4px; text-shadow: 0 0 8px rgba(255,23,68,0.6); }
-    .tab-inactive { color: #9ca3af; cursor: pointer; }
-
-    /* Futuristic Setup Cards */
-    .card-bullish {
-        background: linear-gradient(135deg, rgba(0, 255, 135, 0.05) 0%, rgba(11, 15, 25, 0.9) 100%);
-        border: 1px solid rgba(0, 255, 135, 0.4);
-        border-radius: 12px;
-        padding: 16px;
-        box-shadow: 0 0 15px rgba(0, 255, 135, 0.15);
-        margin-bottom: 15px;
-    }
-    
-    .card-bearish {
-        background: linear-gradient(135deg, rgba(255, 23, 68, 0.05) 0%, rgba(11, 15, 25, 0.9) 100%);
-        border: 1px solid rgba(255, 23, 68, 0.4);
-        border-radius: 12px;
-        padding: 16px;
-        box-shadow: 0 0 15px rgba(255, 23, 68, 0.15);
-        margin-bottom: 15px;
-    }
-
-    .badge-bull {
-        background: rgba(0, 255, 135, 0.15);
-        color: #00ff87;
-        border: 1px solid #00ff87;
-        padding: 3px 10px;
-        border-radius: 6px;
-        font-size: 11px;
-        font-weight: 700;
-        letter-spacing: 0.5px;
-    }
-
-    .badge-bear {
-        background: rgba(255, 23, 68, 0.15);
-        color: #ff1744;
-        border: 1px solid #ff1744;
-        padding: 3px 10px;
-        border-radius: 6px;
-        font-size: 11px;
-        font-weight: 700;
-        letter-spacing: 0.5px;
-    }
-
-    .info-grid {
-        display: flex;
-        justify-content: space-between;
-        font-size: 11px;
-        color: #9ca3af;
-        margin-top: 10px;
-        padding-top: 8px;
-        border-top: 1px solid rgba(255,255,255,0.05);
-    }
-
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
+    header {visibility: hidden;}
+    .block-container {
+        padding: 0rem !important;
+        max-width: 100% !important;
+    }
+    .stApp {
+        background-color: #030508;
+    }
 </style>
 """, unsafe_allow_html=True)
 
-# 3. Top Header & Navigation
-st.markdown("""
-<div class="top-nav">
-    <div style="font-weight: 700; font-size: 16px; color: #ffffff; display: flex; align-items: center; gap: 8px;">
-        ⚡ Order Block <span style="width: 8px; height: 8px; background: #00ff87; border-radius: 50%; display: inline-block; box-shadow: 0 0 10px #00ff87;"></span>
-    </div>
-    <div class="nav-tabs">
-        <span class="tab-inactive">MARKET</span>
-        <span class="tab-active-green">FLOW</span>
-        <span class="tab-inactive">▲ TOP</span>
-        <span class="tab-inactive">▼ TOP</span>
-    </div>
-    <div>
-        <span style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); padding: 5px 14px; border-radius: 6px; font-size: 12px; color: #ffffff; font-weight: 600;">Unlock Pro</span>
-    </div>
-</div>
-""", unsafe_allow_html=True)
+# Exact High-Graphics OrderBlock UI Replica Component
+html_code = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            user-select: none;
+        }
 
-# 4. Flow Network Section (Matching Order-Block.com Sankey Diagram)[span_6](start_span)[span_6](end_span)
-st.markdown("<div style='font-size: 12px; font-weight: 600; color: #9ca3af; margin-bottom: 5px;'>FLOW &bull; LIQUIDITY & ORDER BLOCKS</div>", unsafe_allow_html=True)
+        body {
+            background-color: #04060a;
+            color: #d1d5db;
+            overflow-x: hidden;
+            padding: 10px;
+        }
 
-# Generate Sankey Flow Chart
-labels = ["Market Pool", "RELIANCE", "TCS", "INFY", "HDFCBANK", "SBIN", "ICICIBANK", "Bullish Pool", "Bearish Pool"]
-sources = [0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6]
-targets = [1, 2, 3, 4, 5, 6, 7, 7, 8, 8, 7, 8]
-values  = [10, 8, 7, 9, 6, 8, 10, 8, 7, 9, 6, 8]
-colors  = [
-    "rgba(0,255,135,0.3)", "rgba(0,255,135,0.3)", "rgba(255,23,68,0.3)", 
-    "rgba(0,255,135,0.3)", "rgba(255,23,68,0.3)", "rgba(0,255,135,0.3)",
-    "rgba(0,255,135,0.5)", "rgba(0,255,135,0.5)", "rgba(255,23,68,0.5)",
-    "rgba(255,23,68,0.5)", "rgba(0,255,135,0.5)", "rgba(255,23,68,0.5)"
-]
+        /* Header Navbar */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(13, 17, 26, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(12px);
+            padding: 10px 16px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+        }
 
-fig = go.Figure(data=[go.Sankey(
-    node=dict(
-        pad=12,
-        thickness=15,
-        line=dict(color="#000000", width=0.5),
-        label=labels,
-        color=["#3b82f6"] + ["#1e293b"]*6 + ["#00ff87", "#ff1744"]
-    ),
-    link=dict(
-        source=sources,
-        target=targets,
-        value=values,
-        color=colors
-    )
-)])
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 800;
+            font-size: 15px;
+            color: #ffffff;
+        }
 
-fig.update_layout(
-    template="plotly_dark",
-    paper_bgcolor="#05070c",
-    plot_bgcolor="#05070c",
-    height=380,
-    margin=dict(l=10, r=10, t=10, b=10)
-)
-st.plotly_chart(fig, use_container_width=True)
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background-color: #00ff87;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #00ff87;
+            animation: pulse 1.5s infinite;
+        }
 
-st.markdown("<hr style='border: 0.5px solid #1a2234; margin: 15px 0;'>", unsafe_allow_html=True)
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 255, 135, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(0, 255, 135, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 255, 135, 0); }
+        }
 
-# 5. Detailed Setups & Mini Price Charts (Matching Screenshots)[span_7](start_span)[span_7](end_span)[span_8](start_span)[span_8](end_span)[span_9](start_span)[span_9](end_span)
-st.markdown("<div style='font-size: 13px; font-weight: 700; color: #ffffff; margin-bottom: 12px;'>⚡ TOP BULLISH & BEARISH SETUPS</div>", unsafe_allow_html=True)
+        .tabs {
+            display: flex;
+            gap: 16px;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
 
-col1, col2 = st.columns(2)
+        .tab {
+            color: #6b7280;
+            cursor: pointer;
+            padding-bottom: 2px;
+            transition: all 0.2s;
+        }
 
-with col1:
-    st.markdown("""
-    <div class="card-bullish">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <span class="badge-bull">BULLISH</span>
-            <span style="font-size: 12px; color: #00ff87; font-weight: 600;">RELIANCE &bull; +2.45%</span>
+        .tab.active {
+            color: #00ff87;
+            border-bottom: 2px solid #00ff87;
+            text-shadow: 0 0 8px rgba(0, 255, 135, 0.5);
+        }
+
+        .unlock-btn {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            color: #fff;
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 700;
+            box-shadow: 0 0 12px rgba(99, 102, 241, 0.4);
+        }
+
+        /* Flow Canvas Section */
+        .flow-container {
+            background: #060910;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 12px;
+            position: relative;
+            margin-bottom: 15px;
+        }
+
+        .flow-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            color: #9ca3af;
+            margin-bottom: 8px;
+        }
+
+        canvas {
+            width: 100%;
+            height: 380px;
+            display: block;
+            border-radius: 8px;
+            background: radial-gradient(circle at center, #090e18 0%, #030509 100%);
+        }
+
+        /* Contenders Grid */
+        .section-title {
+            font-size: 11px;
+            font-weight: 800;
+            color: #00ff87;
+            margin-bottom: 10px;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .contenders-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .c-card {
+            background: rgba(10, 15, 26, 0.7);
+            border: 1px solid rgba(0, 255, 135, 0.25);
+            border-radius: 8px;
+            padding: 10px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 10px rgba(0, 255, 135, 0.05);
+        }
+
+        .c-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 3px; height: 100%;
+            background: #00ff87;
+            box-shadow: 0 0 8px #00ff87;
+        }
+
+        .c-name {
+            font-size: 11px;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .c-status {
+            font-size: 9px;
+            color: #00ff87;
+            font-weight: 600;
+            margin-top: 2px;
+        }
+
+        .c-bars {
+            display: flex;
+            gap: 2px;
+            margin-top: 8px;
+        }
+
+        .bar {
+            height: 4px;
+            flex: 1;
+            background: #00ff87;
+            border-radius: 1px;
+            opacity: 0.8;
+            box-shadow: 0 0 4px #00ff87;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Navigation -->
+    <div class="header">
+        <div class="brand">
+            <span>Order Block</span>
+            <div class="live-dot"></div>
         </div>
-        <div style="font-size: 12px; color: #e5e7eb; font-weight: 600; margin-bottom: 6px;">LONG BUILD-UP</div>
-    """, unsafe_allow_html=True)
-    
-    # Mini Candlestick Chart inside Card
-    fig_mini1 = go.Figure(data=[go.Candlestick(
-        x=[1,2,3,4,5], open=[100,102,101,105,108], high=[103,104,106,108,110], 
-        low=[99,101,100,104,106], close=[102,101,105,108,109],
-        increasing_line_color='#00ff87', decreasing_line_color='#ff1744'
-    )])
-    fig_mini1.update_layout(template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", height=150, margin=dict(l=0,r=0,t=0,b=0), xaxis_visible=False, yaxis_visible=False)
-    st.plotly_chart(fig_mini1, use_container_width=True)
-    
-    st.markdown("""
-        <div class="info-grid">
-            <span>ZONE: ₹2,450 - ₹2,480</span>
-            <span>SUPPORT: ₹2,420</span>
-            <span style="color: #00ff87;">R:R 1:2.5</span>
+        <div class="tabs">
+            <div class="tab">MARKET</div>
+            <div class="tab active">FLOW</div>
+            <div class="tab" style="color:#00ff87;">▲ TOP</div>
+            <div class="tab" style="color:#ff1744;">▼ TOP</div>
+        </div>
+        <div class="unlock-btn">Unlock</div>
+    </div>
+
+    <!-- Flow Dynamic Canvas Chart -->
+    <div class="flow-container">
+        <div class="flow-header">
+            <span>FLOW &bull; LIQUIDITY POOL SCANNER</span>
+            <span style="color:#00ff87;">▲ TOP: 172 &nbsp; <span style="color:#ff1744;">▼ TOP: 41</span></span>
+        </div>
+        <canvas id="flowCanvas"></canvas>
+    </div>
+
+    <!-- Bullish Contenders Section -->
+    <div class="section-title">
+        ▲ BULLISH CONTENDERS
+    </div>
+
+    <div class="contenders-grid">
+        <div class="c-card">
+            <div class="c-name">RELIANCE</div>
+            <div class="c-status">LONG BUILD-UP</div>
+            <div class="c-bars">
+                <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+            </div>
+        </div>
+        <div class="c-card">
+            <div class="c-name">TCS</div>
+            <div class="c-status">ACCUMULATION</div>
+            <div class="c-bars">
+                <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+            </div>
+        </div>
+        <div class="c-card">
+            <div class="c-name">HDFCBANK</div>
+            <div class="c-status">ORDER BLOCK</div>
+            <div class="c-bars">
+                <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+            </div>
+        </div>
+        <div class="c-card">
+            <div class="c-name">ICICIBANK</div>
+            <div class="c-status">BREAKOUT</div>
+            <div class="c-bars">
+                <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+            </div>
         </div>
     </div>
-    """, unsafe_allow_html=True)
 
-with col2:
-    st.markdown("""
-    <div class="card-bearish">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <span class="badge-bear">BEARISH</span>
-            <span style="font-size: 12px; color: #ff1744; font-weight: 600;">INFY &bull; -1.85%</span>
-        </div>
-        <div style="font-size: 12px; color: #e5e7eb; font-weight: 600; margin-bottom: 6px;">SHORT BUILD-UP</div>
-    """, unsafe_allow_html=True)
-    
-    # Mini Candlestick Chart inside Card
-    fig_mini2 = go.Figure(data=[go.Candlestick(
-        x=[1,2,3,4,5], open=[150,148,149,145,142], high=[151,149,150,146,143], 
-        low=[147,144,145,141,139], close=[148,149,145,142,140],
-        increasing_line_color='#00ff87', decreasing_line_color='#ff1744'
-    )])
-    fig_mini2.update_layout(template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", height=150, margin=dict(l=0,r=0,t=0,b=0), xaxis_visible=False, yaxis_visible=False)
-    st.plotly_chart(fig_mini2, use_container_width=True)
-    
-    st.markdown("""
-        <div class="info-grid">
-            <span>ZONE: ₹1,510 - ₹1,530</span>
-            <span>RESISTANCE: ₹1,550</span>
-            <span style="color: #ff1744;">R:R 1:2.0</span>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+    <script>
+        const canvas = document.getElementById('flowCanvas');
+        const ctx = canvas.getContext('2d');
 
-# Auto-refresh loop for live flow animation
-time.sleep(20)
-st.rerun()
+        function resizeCanvas() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        let offset = 0;
+
+        function drawAnimatedFlow() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            const w = canvas.width;
+            const h = canvas.height;
+            const centerY = h / 2;
+
+            // Center Horizontal Glow Line
+            ctx.beginPath();
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([4, 4]);
+            ctx.moveTo(0, centerY);
+            ctx.lineTo(w, centerY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Draw Dynamic Bullish Lines (Green)
+            for (let i = 0; i < 22; i++) {
+                ctx.beginPath();
+                ctx.strokeStyle = `rgba(0, 255, 135, ${0.15 + (i % 5) * 0.15})`;
+                ctx.lineWidth = 1.2;
+
+                const startY = centerY;
+                const endY = 30 + (i * 7);
+                const cp1x = w * 0.25;
+                const cp1y = centerY - (i * 2) - Math.sin((offset + i) * 0.05) * 15;
+                const cp2x = w * 0.75;
+                const cp2y = endY + Math.cos((offset + i) * 0.05) * 15;
+
+                ctx.moveTo(30, startY);
+                ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, w - 40, endY);
+                ctx.stroke();
+            }
+
+            // Draw Dynamic Bearish Lines (Red)
+            for (let i = 0; i < 22; i++) {
+                ctx.beginPath();
+                ctx.strokeStyle = `rgba(255, 23, 68, ${0.15 + (i % 5) * 0.15})`;
+                ctx.lineWidth = 1.2;
+
+                const startY = centerY;
+                const endY = h - 30 - (i * 7);
+                const cp1x = w * 0.25;
+                const cp1y = centerY + (i * 2) + Math.sin((offset + i) * 0.05) * 15;
+                const cp2x = w * 0.75;
+                const cp2y = endY - Math.cos((offset + i) * 0.05) * 15;
+
+                ctx.moveTo(30, startY);
+                ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, w - 40, endY);
+                ctx.stroke();
+            }
+
+            // Moving Glowing Particles
+            for (let p = 0; p < 12; p++) {
+                let progress = ((offset * 0.8 + p * 30) % 100) / 100;
+                let px = 30 + progress * (w - 70);
+                let pyBull = centerY - (progress * (centerY - 40)) + Math.sin(progress * 5) * 10;
+                let pyBear = centerY + (progress * (centerY - 40)) - Math.sin(progress * 5) * 10;
+
+                // Green particle
+                ctx.beginPath();
+                ctx.fillStyle = '#00ff87';
+                ctx.arc(px, pyBull, 2.5, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Red particle
+                ctx.beginPath();
+                ctx.fillStyle = '#ff1744';
+                ctx.arc(px, pyBear, 2.5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            offset += 0.8;
+            requestAnimationFrame(drawAnimatedFlow);
+        }
+
+        drawAnimatedFlow();
+    </script>
+</body>
+</html>
+"""
+
+# Render full screen canvas application inside Streamlit
+components.html(html_code, height=720, scrolling=True)
