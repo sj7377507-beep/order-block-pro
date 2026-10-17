@@ -6,7 +6,7 @@ import streamlit.components.v1 as components
 
 # 1. Page Configuration
 st.set_page_config(
-    page_title="OrderBlock.com Pro Terminal Clone",
+    page_title="OrderBlock.com Exact Flow Clone",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
@@ -21,74 +21,41 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 2. Live Whole-Market Order Block Data Engine
+# 2. Live Market Data
 @st.cache_data(ttl=20)
-def fetch_whole_market_flow():
-    symbols = [
-        "RELIANCE.NS", "TCS.NS", "INFY.NS", "HDFCBANK.NS", "SBIN.NS", 
-        "ICICIBANK.NS", "AXISBANK.NS", "M&M.NS", "FEDERALBNK.NS", "DRREDDY.NS",
-        "NTPC.NS", "CANBK.NS", "SUZLON.NS", "DIVISLAB.NS", "PAYTM.NS", 
-        "BHARTIARTL.NS", "LT.NS", "TATAMOTORS.NS", "EICHERMOT.NS", "TITAN.NS"
-    ]
+def fetch_exact_flow_data():
+    left_symbols = ["TCS.NS", "RELIANCE.NS", "INFY.NS", "HDFCBANK.NS", "SBIN.NS", "ICICIBANK.NS", "AXISBANK.NS", "LT.NS"]
+    right_symbols = ["EICHERMOT.NS", "M&M.NS", "FEDERALBNK.NS", "DRREDDY.NS", "NTPC.NS", "CANBK.NS", "SUZLON.NS", "DIVISLAB.NS"]
     
+    symbols = list(set(left_symbols + right_symbols))
     try:
         data = yf.download(symbols, period="2d", interval="15m", group_by='ticker', progress=False)
     except Exception:
         data = pd.DataFrame()
 
-    stock_list = []
-    
-    for s in symbols:
-        ticker_name = s.replace(".NS", "")
+    def parse_symbol(s):
         try:
             if not data.empty and s in data:
                 df = data[s].dropna()
                 c = float(df['Close'].iloc[-1])
                 p = float(df['Close'].iloc[-2])
                 pct = round(((c - p) / p) * 100, 2)
-                v = int(df['Volume'].iloc[-1])
             else:
-                c, pct, v = 1500.0, 1.25, 50000
+                c, pct = 2500.0, 1.45
         except Exception:
-            c, pct, v = 1500.0, 0.50, 25000
+            c, pct = 2500.0, 0.85
+        return {"name": s.replace(".NS", ""), "price": round(c, 2), "pct": pct}
 
-        # Signal Classifier based on Price Action & Volume
-        if pct > 1.2:
-            setup = "LONG BUILD-UP"
-            zone = f"₹{round(c*0.99,1)} - ₹{round(c*1.01,1)}"
-            rr = "1:2.8"
-        elif pct > 0:
-            setup = "ACCUMULATION"
-            zone = f"₹{round(c*0.985,1)} - ₹{round(c*1.005,1)}"
-            rr = "1:2.1"
-        elif pct < -1.2:
-            setup = "SHORT BUILD-UP"
-            zone = f"₹{round(c*0.99,1)} - ₹{round(c*1.015,1)}"
-            rr = "1:2.4"
-        else:
-            setup = "SHORT COVERING"
-            zone = f"₹{round(c*0.98,1)} - ₹{round(c*1.01,1)}"
-            rr = "1:1.9"
-            
-        stock_list.append({
-            "name": ticker_name,
-            "price": round(c, 2),
-            "pct": pct,
-            "setup": setup,
-            "zone": zone,
-            "rr": rr,
-            "volume": v
-        })
-            
-    stock_list = sorted(stock_list, key=lambda x: x['pct'], reverse=True)
-    return stock_list
+    left_stocks = [parse_symbol(s) for s in left_symbols]
+    right_stocks = [parse_symbol(s) for s in right_symbols]
 
-live_stocks = fetch_whole_market_flow()
-bulls_cnt = len([s for s in live_stocks if s['pct'] >= 0])
-bears_cnt = len([s for s in live_stocks if s['pct'] < 0])
-stocks_json = json.dumps(live_stocks)
+    return left_stocks, right_stocks
 
-# 3. Complete OrderBlock.com Frontend Replica Injection
+left_data, right_data = fetch_exact_flow_data()
+left_json = json.dumps(left_data)
+right_json = json.dumps(right_data)
+
+# 3. Exact HTML5 WebGL/Canvas Replication
 html_code = f"""
 <!DOCTYPE html>
 <html lang="en">
@@ -98,165 +65,62 @@ html_code = f"""
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         * {{ box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; user-select: none; }}
-        body {{ background-color: #04060a; color: #d1d5db; overflow-x: hidden; padding: 8px; }}
+        body {{ background-color: #04060a; color: #d1d5db; overflow: hidden; padding: 5px; }}
 
         /* Top Header Navbar */
         .header {{
             display: flex; justify-content: space-between; align-items: center;
-            background: rgba(13, 17, 26, 0.9); border: 1px solid rgba(255, 255, 255, 0.08);
-            backdrop-filter: blur(12px); padding: 8px 14px; border-radius: 10px; margin-bottom: 12px;
+            background: rgba(13, 17, 26, 0.95); border: 1px solid rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(12px); padding: 6px 12px; border-radius: 8px; margin-bottom: 6px;
         }}
-        .brand {{ display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 14px; color: #ffffff; }}
-        .live-dot {{ width: 8px; height: 8px; background-color: #00ff87; border-radius: 50%; box-shadow: 0 0 10px #00ff87; animation: pulse 1.5s infinite; }}
-        @keyframes pulse {{ 0% {{ transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 255, 135, 0.7); }} 70% {{ transform: scale(1); box-shadow: 0 0 0 8px rgba(0, 255, 135, 0); }} 100% {{ transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 255, 135, 0); }} }}
+        .brand {{ display: flex; align-items: center; gap: 6px; font-weight: 800; font-size: 13px; color: #ffffff; }}
+        .live-dot {{ width: 7px; height: 7px; background-color: #00ff87; border-radius: 50%; box-shadow: 0 0 8px #00ff87; animation: pulse 1.5s infinite; }}
+        @keyframes pulse {{ 0% {{ transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 255, 135, 0.7); }} 70% {{ transform: scale(1); box-shadow: 0 0 0 6px rgba(0, 255, 135, 0); }} 100% {{ transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 255, 135, 0); }} }}
 
-        .tabs {{ display: flex; gap: 14px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; }}
-        .tab {{ color: #6b7280; cursor: pointer; padding: 4px 6px; border-radius: 4px; transition: all 0.2s; }}
-        .tab.active {{ color: #00ff87; background: rgba(0, 255, 135, 0.08); border-bottom: 2px solid #00ff87; text-shadow: 0 0 8px rgba(0, 255, 135, 0.5); }}
+        .tabs {{ display: flex; gap: 12px; font-size: 11px; font-weight: 700; }}
+        .tab {{ color: #6b7280; cursor: pointer; padding: 2px 5px; border-radius: 4px; }}
+        .tab.active {{ color: #00ff87; border-bottom: 2px solid #00ff87; text-shadow: 0 0 8px rgba(0, 255, 135, 0.5); }}
 
-        /* Dynamic View Sections */
-        .view-section {{ display: none; }}
-        .view-section.active-view {{ display: block; }}
+        .counters {{ display: flex; gap: 12px; font-size: 11px; font-weight: 800; }}
+        .c-bull {{ color: #00ff87; text-shadow: 0 0 6px rgba(0,255,135,0.4); }}
+        .c-bear {{ color: #ff1744; text-shadow: 0 0 6px rgba(255,23,68,0.4); }}
 
-        /* Flow Canvas Section */
+        /* Flow Container */
         .flow-container {{
             background: #060910; border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 12px; padding: 12px; position: relative; margin-bottom: 15px;
+            border-radius: 10px; padding: 6px; position: relative; width: 100%; height: calc(100vh - 50px);
         }}
-        .flow-header {{ display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; color: #9ca3af; margin-bottom: 8px; }}
 
-        canvas {{ width: 100%; height: 380px; display: block; border-radius: 8px; background: radial-gradient(circle at center, #080d18 0%, #030509 100%); }}
-
-        /* Grid Containers */
-        .section-title {{ font-size: 11px; font-weight: 800; color: #00ff87; margin: 12px 0 8px 0; letter-spacing: 1px; }}
-        .grid-container {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 15px; }}
-
-        /* Setup Cards */
-        .c-card {{
-            background: rgba(10, 15, 26, 0.85); border: 1px solid rgba(0, 255, 135, 0.3);
-            border-radius: 8px; padding: 10px; position: relative; overflow: hidden;
-            box-shadow: 0 0 10px rgba(0, 255, 135, 0.08);
-        }}
-        .c-card.bear {{ border-color: rgba(255, 23, 68, 0.3); box-shadow: 0 0 10px rgba(255, 23, 68, 0.08); }}
-        .c-card::before {{ content: ''; position: absolute; top: 0; left: 0; width: 3px; height: 100%; background: #00ff87; }}
-        .c-card.bear::before {{ background: #ff1744; }}
-
-        .c-header {{ display: flex; justify-content: space-between; align-items: center; }}
-        .c-name {{ font-size: 12px; font-weight: 800; color: #ffffff; }}
-        .c-pct {{ font-size: 11px; font-weight: 700; color: #00ff87; }}
-        .c-card.bear .c-pct {{ color: #ff1744; }}
-        
-        .c-price {{ font-size: 13px; font-weight: 700; color: #d1d5db; margin: 4px 0 2px 0; }}
-        .c-status {{ font-size: 9px; color: #9ca3af; font-weight: 600; letter-spacing: 0.5px; }}
-
-        .c-bars {{ display: flex; gap: 2px; margin-top: 8px; }}
-        .bar {{ height: 4px; flex: 1; background: #00ff87; border-radius: 1px; opacity: 0.8; box-shadow: 0 0 4px #00ff87; }}
-        .c-card.bear .bar {{ background: #ff1744; box-shadow: 0 0 4px #ff1744; }}
-
-        /* Sectors Grid */
-        .sector-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px; }}
-        .sector-box {{ background: #0d1322; border: 1px solid #1e293b; border-radius: 8px; padding: 10px; }}
-        .sector-header {{ display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; margin-bottom: 6px; }}
-        .mini-bars {{ display: flex; gap: 2px; }}
-        .bar-green {{ flex: 1; height: 5px; background: #00ff87; border-radius: 1px; box-shadow: 0 0 4px rgba(0,255,135,0.4); }}
-        .bar-red {{ flex: 1; height: 5px; background: #ff1744; border-radius: 1px; box-shadow: 0 0 4px rgba(255,23,68,0.4); }}
-        .bar-gray {{ flex: 1; height: 5px; background: #1e293b; border-radius: 1px; }}
+        canvas {{ width: 100%; height: 100%; display: block; border-radius: 6px; background: #030508; }}
     </style>
 </head>
 <body>
 
-    <!-- Header Navigation Bar -->
     <div class="header">
         <div class="brand">
             <span>Order Block</span>
             <div class="live-dot"></div>
         </div>
         <div class="tabs">
-            <div class="tab" id="tab-market" onclick="switchTab('market')">MARKET</div>
-            <div class="tab active" id="tab-flow" onclick="switchTab('flow')">FLOW</div>
-            <div class="tab" id="tab-top" style="color:#00ff87;" onclick="switchTab('top')">▲ TOP</div>
-            <div class="tab" id="tab-bottom" style="color:#ff1744;" onclick="switchTab('bottom')">▼ TOP</div>
+            <div class="tab">MARKET</div>
+            <div class="tab active">FLOW</div>
+            <div class="tab" style="color:#00ff87;">▲ TOP</div>
+            <div class="tab" style="color:#ff1744;">▼ TOP</div>
+        </div>
+        <div class="counters">
+            <span class="c-bull">▲ BULLISH 172</span>
+            <span class="c-bear">▼ BEARISH 41</span>
         </div>
     </div>
 
-    <!-- VIEW 1: FLOW (Canvas + Particle Effects) -->
-    <div id="view-flow" class="view-section active-view">
-        <div class="flow-container">
-            <div class="flow-header">
-                <span>FLOW &bull; LIVE WHOLE MARKET ORDER BLOCKS</span>
-                <span style="color:#00ff87;">▲ BULLISH: {bulls_cnt} &nbsp; <span style="color:#ff1744;">▼ BEARISH: {bears_cnt}</span></span>
-            </div>
-            <canvas id="flowCanvas"></canvas>
-        </div>
-        <div class="section-title">▲ BULLISH CONTENDERS</div>
-        <div class="grid-container" id="bullGrid"></div>
-    </div>
-
-    <!-- VIEW 2: MARKET (Sectors + Overview) -->
-    <div id="view-market" class="view-section">
-        <div class="section-title">SECTORIAL LIQUIDITY BREAKDOWN</div>
-        <div class="sector-grid">
-            <div class="sector-box"><div class="sector-header"><span>BANK</span><span style="color:#00ff87;">+1.75%</span></div><div class="mini-bars"><div class="bar-green"></div><div class="bar-green"></div><div class="bar-green"></div><div class="bar-green"></div><div class="bar-red"></div></div></div>
-            <div class="sector-box"><div class="sector-header"><span>IT</span><span style="color:#00ff87;">+0.95%</span></div><div class="mini-bars"><div class="bar-green"></div><div class="bar-green"></div><div class="bar-red"></div><div class="bar-gray"></div><div class="bar-gray"></div></div></div>
-            <div class="sector-box"><div class="sector-header"><span>AUTO</span><span style="color:#00ff87;">+1.40%</span></div><div class="mini-bars"><div class="bar-green"></div><div class="bar-green"></div><div class="bar-green"></div><div class="bar-red"></div><div class="bar-gray"></div></div></div>
-            <div class="sector-box"><div class="sector-header"><span>PHARMA</span><span style="color:#ff1744;">-0.85%</span></div><div class="mini-bars"><div class="bar-red"></div><div class="bar-red"></div><div class="bar-red"></div><div class="bar-green"></div><div class="bar-gray"></div></div></div>
-            <div class="sector-box"><div class="sector-header"><span>METAL</span><span style="color:#00ff87;">+1.10%</span></div><div class="mini-bars"><div class="bar-green"></div><div class="bar-green"></div><div class="bar-green"></div><div class="bar-red"></div><div class="bar-gray"></div></div></div>
-            <div class="sector-box"><div class="sector-header"><span>ENERGY</span><span style="color:#00ff87;">+2.05%</span></div><div class="mini-bars"><div class="bar-green"></div><div class="bar-green"></div><div class="bar-green"></div><div class="bar-green"></div><div class="bar-green"></div></div></div>
-        </div>
-        <div class="section-title" style="margin-top:20px;">ALL SCANNED STOCKS</div>
-        <div class="grid-container" id="allGrid"></div>
-    </div>
-
-    <!-- VIEW 3: TOP BULLISH SETUPS -->
-    <div id="view-top" class="view-section">
-        <div class="section-title">▲ TOP BULLISH ORDER BLOCKS</div>
-        <div class="grid-container" id="topBullGrid"></div>
-    </div>
-
-    <!-- VIEW 4: TOP BEARISH SETUPS -->
-    <div id="view-bottom" class="view-section">
-        <div class="section-title" style="color:#ff1744;">▼ TOP BEARISH ORDER BLOCKS</div>
-        <div class="grid-container" id="topBearGrid"></div>
+    <div class="flow-container">
+        <canvas id="flowCanvas"></canvas>
     </div>
 
     <script>
-        const stocks = {stocks_json};
+        const leftStocks = {left_json};
+        const rightStocks = {right_json};
 
-        function renderCards() {{
-            const bulls = stocks.filter(s => s.pct >= 0);
-            const bears = stocks.filter(s => s.pct < 0);
-
-            const makeCard = s => `
-                <div class="c-card ${{s.pct < 0 ? 'bear' : ''}}">
-                    <div class="c-header">
-                        <span class="c-name">${{s.name}}</span>
-                        <span class="c-pct">${{s.pct >= 0 ? '+' : ''}}${{s.pct}}%</span>
-                    </div>
-                    <div class="c-price">₹${{s.price}}</div>
-                    <div class="c-status">${{s.setup}} &bull; R:R ${{s.rr}}</div>
-                    <div class="c-bars">
-                        <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
-                    </div>
-                </div>
-            `;
-
-            document.getElementById('bullGrid').innerHTML = bulls.slice(0, 6).map(makeCard).join('');
-            document.getElementById('allGrid').innerHTML = stocks.map(makeCard).join('');
-            document.getElementById('topBullGrid').innerHTML = bulls.map(makeCard).join('');
-            document.getElementById('topBearGrid').innerHTML = bears.map(makeCard).join('');
-        }}
-        renderCards();
-
-        // View Tab Switcher
-        function switchTab(tabName) {{
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active-view'));
-
-            document.getElementById('tab-' + tabName).classList.add('active');
-            document.getElementById('view-' + tabName).classList.add('active-view');
-        }}
-
-        // Canvas Flow Animation Loop
         const canvas = document.getElementById('flowCanvas');
         const ctx = canvas.getContext('2d');
 
@@ -269,90 +133,119 @@ html_code = f"""
 
         let offset = 0;
 
-        function drawAnimatedFlow() {{
+        function drawFullOrderBlockFlow() {{
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
+
             const w = canvas.width;
             const h = canvas.height;
-            const centerY = h / 2;
 
-            ctx.beginPath();
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+            const leftX = 110;
+            const rightX = w - 120;
+            const poolX1 = w * 0.52;
+            const poolX2 = w * 0.65;
+            const poolY1 = 80;
+            const poolY2 = h - 80;
+
+            // 1. Draw Blue Support/Resistance Level Lines
+            ctx.strokeStyle = 'rgba(59, 130, 246, 0.35)';
             ctx.lineWidth = 1;
-            ctx.setLineDash([4, 4]);
-            ctx.moveTo(0, centerY);
-            ctx.lineTo(w, centerY);
-            ctx.stroke();
-            ctx.setLineDash([]);
-
-            const bulls = stocks.filter(s => s.pct >= 0);
-            const bears = stocks.filter(s => s.pct < 0);
-
-            bulls.forEach((s, i) => {{
-                const endY = 20 + (i * (centerY - 25) / Math.max(bulls.length, 1));
+            [h * 0.35, h * 0.52, h * 0.72].forEach(y => {{
                 ctx.beginPath();
-                ctx.strokeStyle = `rgba(0, 255, 135, ${{0.25 + (i % 3) * 0.25}})`;
-                ctx.lineWidth = 1.5;
-
-                const cp1x = w * 0.3;
-                const cp1y = centerY - (i * 2) - Math.sin((offset + i) * 0.05) * 10;
-                const cp2x = w * 0.7;
-                const cp2y = endY + Math.cos((offset + i) * 0.05) * 10;
-
-                ctx.moveTo(15, centerY);
-                ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, w - 120, endY);
+                ctx.moveTo(leftX, y);
+                ctx.lineTo(rightX, y);
                 ctx.stroke();
-
-                ctx.fillStyle = '#00ff87';
-                ctx.font = 'bold 10px Inter';
-                ctx.fillText(`${{s.name}} (${{s.pct >= 0 ? '+' : ''}}${{s.pct}}%)`, w - 110, endY + 3);
             }});
 
-            bears.forEach((s, i) => {{
-                const endY = h - 20 - (i * (centerY - 25) / Math.max(bears.length, 1));
+            // 2. Draw Central Order Block Pool Container
+            ctx.strokeStyle = 'rgba(0, 255, 135, 0.4)';
+            ctx.lineWidth = 1.5;
+            ctx.strokeRect(poolX1, poolY1, poolX2 - poolX1, poolY2 - poolY1);
+
+            // Internal horizontal stacked lines inside Pool
+            ctx.strokeStyle = 'rgba(0, 255, 135, 0.15)';
+            ctx.lineWidth = 0.8;
+            for (let y = poolY1 + 10; y < poolY2; y += 8) {{
                 ctx.beginPath();
-                ctx.strokeStyle = `rgba(255, 23, 68, ${{0.25 + (i % 3) * 0.25}})`;
-                ctx.lineWidth = 1.5;
-
-                const cp1x = w * 0.3;
-                const cp1y = centerY + (i * 2) + Math.sin((offset + i) * 0.05) * 10;
-                const cp2x = w * 0.7;
-                const cp2y = endY - Math.cos((offset + i) * 0.05) * 10;
-
-                ctx.moveTo(15, centerY);
-                ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, w - 120, endY);
+                ctx.moveTo(poolX1, y);
+                ctx.lineTo(poolX2, y);
                 ctx.stroke();
+            }}
 
-                ctx.fillStyle = '#ff1744';
+            // 3. Draw Left Stocks & Input Flow Curves
+            const leftStep = (h - 60) / Math.max(leftStocks.length, 1);
+            leftStocks.forEach((s, i) => {{
+                const startY = 30 + i * leftStep;
+
+                // Label
+                ctx.fillStyle = s.pct >= 0 ? '#00ff87' : '#ff1744';
                 ctx.font = 'bold 10px Inter';
-                ctx.fillText(`${{s.name}} (${{s.pct}}%)`, w - 110, endY + 3);
+                ctx.fillText(`${{s.name}} (${{s.pct >= 0 ? '+' : ''}}${{s.pct}}%)`, 10, startY + 4);
+
+                // Multiple Wavy Trajectory Lines per Stock
+                for (let k = 0; k < 3; k++) {{
+                    const targetY = poolY1 + ((i * 3 + k) * (poolY2 - poolY1) / 24);
+                    
+                    ctx.beginPath();
+                    ctx.strokeStyle = s.pct >= 0 ? `rgba(0, 255, 135, ${{0.15 + k * 0.1}})` : `rgba(255, 23, 68, ${{0.15 + k * 0.1}})`;
+                    ctx.lineWidth = 1;
+
+                    const cp1x = leftX + (poolX1 - leftX) * 0.4;
+                    const cp1y = startY + Math.sin((offset + i + k) * 0.04) * 15;
+                    const cp2x = leftX + (poolX1 - leftX) * 0.8;
+                    const cp2y = targetY - Math.cos((offset + i + k) * 0.04) * 15;
+
+                    ctx.moveTo(leftX, startY);
+                    ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, poolX1, targetY);
+                    ctx.stroke();
+                }}
             }});
 
-            for (let p = 0; p < 8; p++) {{
-                let progress = ((offset * 0.7 + p * 20) % 100) / 100;
-                let px = 15 + progress * (w - 135);
-                let pyBull = centerY - (progress * (centerY - 30));
-                let pyBear = centerY + (progress * (centerY - 30));
+            // 4. Draw Outflow Lines & Right Stocks
+            const rightStep = (h - 60) / Math.max(rightStocks.length, 1);
+            rightStocks.forEach((s, i) => {{
+                const endY = 30 + i * rightStep;
+                const poolTargetY = poolY1 + (i * (poolY2 - poolY1) / Math.max(rightStocks.length, 1));
+
+                // Lines from Pool to Right Node
+                ctx.beginPath();
+                ctx.strokeStyle = s.pct >= 0 ? 'rgba(0, 255, 135, 0.25)' : 'rgba(255, 23, 68, 0.25)';
+                ctx.lineWidth = 1.2;
+
+                const cp1x = poolX2 + (rightX - poolX2) * 0.3;
+                const cp1y = poolTargetY;
+                const cp2x = poolX2 + (rightX - poolX2) * 0.7;
+                const cp2y = endY;
+
+                ctx.moveTo(poolX2, poolTargetY);
+                ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, rightX, endY);
+                ctx.stroke();
+
+                // Right Label
+                ctx.fillStyle = s.pct >= 0 ? '#00ff87' : '#ff1744';
+                ctx.font = 'bold 10px Inter';
+                ctx.fillText(`${{s.name}} (${{s.pct >= 0 ? '+' : ''}}${{s.pct}}%)`, rightX + 8, endY + 4);
+            }});
+
+            // 5. Moving Particle Animation
+            for (let p = 0; p < 12; p++) {{
+                let progress = ((offset * 0.8 + p * 15) % 100) / 100;
+                let px = leftX + progress * (poolX1 - leftX);
+                let py = (h / 2) - (progress * (h / 3)) + Math.sin(progress * 4) * 10;
 
                 ctx.beginPath();
                 ctx.fillStyle = '#00ff87';
-                ctx.arc(px, pyBull, 2.5, 0, Math.PI * 2);
-                ctx.fill();
-
-                ctx.beginPath();
-                ctx.fillStyle = '#ff1744';
-                ctx.arc(px, pyBear, 2.5, 0, Math.PI * 2);
+                ctx.arc(px, py, 2, 0, Math.PI * 2);
                 ctx.fill();
             }}
 
             offset += 0.8;
-            requestAnimationFrame(drawAnimatedFlow);
+            requestAnimationFrame(drawFullOrderBlockFlow);
         }}
 
-        drawAnimatedFlow();
+        drawFullOrderBlockFlow();
     </script>
 </body>
 </html>
 """
 
-components.html(html_code, height=900, scrolling=True)
+components.html(html_code, height=750, scrolling=False)
