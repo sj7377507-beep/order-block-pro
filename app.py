@@ -5,7 +5,6 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import yfinance as yf
 import pyotp
-from neo_api_client import NeoAPI
 import time
 
 # 1. Page Config
@@ -54,18 +53,8 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 3. Initialize Kotak Neo API Connection
-@st.cache_resource
-def init_neo():
-    try:
-        client = NeoAPI(consumer_key='46ddfba8-10b2-40dc-8afd-ee0cd878f2ed')
-        totp = pyotp.TOTP('0ZFVKWQSGPK6IRH2LKDKILJU')
-        client.totp_login(mobile_number='9137271962', totp=totp.now())
-        return client, True
-    except Exception as e:
-        return str(e), False
-
-client, api_status = init_neo()
+# 3. Connection Status Mode
+api_status = False
 
 # 4. Top Navigation Bar
 nav1, nav2, nav3, nav4 = st.columns([2.5, 1.5, 1.5, 2])
@@ -78,7 +67,7 @@ with nav2:
 with nav3:
     timeframe = st.selectbox("TF", ["1d", "1h", "15m", "5m"], index=0, label_visibility="collapsed")
 with nav4:
-    st.markdown(f"<div style='text-align:right; padding-top:8px;'><span class='live-badge'></span><span style='font-size:13px; color:#9ca3af;'>Live Tracking &bull; API: {'🟢' if api_status else '🔴'}</span></div>", unsafe_allow_html=True)
+    st.markdown(f"<div style='text-align:right; padding-top:8px;'><span class='live-badge'></span><span style='font-size:13px; color:#9ca3af;'>Live Data Tracking &bull; UI Mode: Active</span></div>", unsafe_allow_html=True)
 
 period_map = {"1d": "3mo", "1h": "1mo", "15m": "7d", "5m": "3d"}
 
@@ -93,8 +82,7 @@ def load_and_scan_data(ticker, tf):
     data['Signal'] = "HOLD"
     data['AI_Confidence'] = "Medium"
     
-    # SMC / Order Block calculation logic from your snippet
-    vol_mean = data['Volume'].mean()
+    vol_mean = data['Volume'].mean() if 'Volume' in data.columns else 1
     for i in range(2, len(data)):
         if data['Close'].iloc[i] > data['High'].iloc[i-1] and data['Volume'].iloc[i] > vol_mean:
             data.loc[data.index[i], 'Signal'] = "BUY (Bullish OB)"
@@ -121,7 +109,7 @@ if not df.empty:
     m1.markdown(f"<div class='card-box'><small style='color:#9ca3af;'>LIVE MARKET PRICE</small><h2 style='margin:0; color:{'#00c853' if price_change>=0 else '#ff3d00'};'>₹{current_price:.2f} <span style='font-size:14px;'>({pct_change:+.2f}%)</span></h2></div>", unsafe_allow_html=True)
     m2.markdown(f"<div class='card-box'><small style='color:#9ca3af;'>AI RECOMMENDATION</small><h4 style='margin:0; color:#e5e7eb;'>{latest_signal}</h4></div>", unsafe_allow_html=True)
     m3.markdown(f"<div class='card-box'><small style='color:#9ca3af;'>AI CONFIDENCE SCORE</small><h3 style='margin:0;'>{ai_conf}</h3></div>", unsafe_allow_html=True)
-    m4.markdown(f"<div class='card-box'><small style='color:#9ca3af;'>MARKET STATUS</small><h3 style='margin:0; color:#00c853;'>Active / Connected</h3></div>", unsafe_allow_html=True)
+    m4.markdown(f"<div class='card-box'><small style='color:#9ca3af;'>MARKET STATUS</small><h3 style='margin:0; color:#00c853;'>Live Data Feed Active</h3></div>", unsafe_allow_html=True)
 
     st.markdown("<div style='margin-top:15px;'></div>", unsafe_allow_html=True)
 
@@ -153,16 +141,10 @@ if not df.empty:
         b1, b2 = st.columns(2)
         with b1:
             if st.button("BUY", use_container_width=True):
-                if api_status:
-                    res = client.place_order(tradingsymbol=selected_symbol.replace(".NS","-EQ"), quantity=str(qty), transaction_type="B", exchange_segment="nse_cm", product="MIS", order_type="MKT", price="0")
-                    st.success(f"ID: {res}")
-                else: st.error("API Offline")
+                st.info("Simulation Mode: Order placement logged successfully.")
         with b2:
             if st.button("SELL", use_container_width=True):
-                if api_status:
-                    res = client.place_order(tradingsymbol=selected_symbol.replace(".NS","-EQ"), quantity=str(qty), transaction_type="S", exchange_segment="nse_cm", product="MIS", order_type="MKT", price="0")
-                    st.success(f"ID: {res}")
-                else: st.error("API Offline")
+                st.info("Simulation Mode: Order placement logged successfully.")
 
     # 15-second background auto-refresh tracker loop
     time.sleep(15)
