@@ -4,4 +4,3 @@ numpy
 plotly
 yfinance
 pyotp
-neo-api-client
