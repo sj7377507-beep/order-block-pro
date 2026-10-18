@@ -1,256 +1,276 @@
-import streamlit as st
-import pandas as pd
-import numpy as np
-import yfinance as yf
-import plotly.graph_objects as go
-from datetime import datetime
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jarves Trading Dashboard</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#0b0f19',
+                        cardBg: '#131b2e',
+                        borderCol: '#1e293b',
+                        neonGreen: '#00ff7f',
+                        neonRed: '#ff3366',
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-darkBg text-slate-200 font-sans antialiased min-h-screen flex flex-col justify-between">
 
-st.set_page_config(page_title="Jarves Trading Trial 1.5", page_icon="📈", layout="wide")
+    <!-- Top Header -->
+    <header class="flex items-center justify-between px-4 py-3 bg-cardBg border-b border-borderCol">
+        <div class="flex items-center space-x-3">
+            <button class="text-slate-300 text-xl"><i class="fa-solid fa-bars"></i></button>
+            <div class="flex items-center space-x-1 font-bold tracking-wider text-white">
+                <i class="fa-solid fa-chart-line text-neonGreen text-xl"></i>
+                <span class="text-lg">JARVES <span class="font-light text-slate-400">TRADING</span></span>
+            </div>
+        </div>
+        <div class="flex items-center space-x-3">
+            <div class="bg-slate-800 p-1.5 rounded-full flex items-center space-x-2 text-xs">
+                <i class="fa-solid fa-sun text-slate-400 px-1"></i>
+                <div class="w-7 h-4 bg-neonGreen rounded-full relative p-0.5 cursor-pointer">
+                    <div class="w-3 h-3 bg-darkBg rounded-full absolute right-0.5"></div>
+                </div>
+            </div>
+            <button class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-semibold px-3 py-1.5 rounded-full shadow-lg flex items-center space-x-1">
+                <i class="fa-solid fa-lock-open text-[10px]"></i>
+                <span>Unlock</span>
+            </button>
+            <button class="text-slate-300 relative">
+                <i class="fa-regular fa-bell text-lg"></i>
+                <span class="absolute top-0 right-0 w-2 h-2 bg-neonRed rounded-full"></span>
+            </button>
+        </div>
+    </header>
 
-st.markdown("""
-<style>
-.stApp{background:#050a14;color:#e8f0ff}
-.block-container{padding:.7rem .45rem 3rem;max-width:1400px}
-h1,h2,h3{color:#e8f0ff}
-[data-testid="stMetric"]{background:#071827;border:1px solid #123149;padding:10px;border-radius:12px}
-.panel{background:#050f1d;border:1px solid #143047;border-radius:14px;padding:12px;margin:8px 0}
-.small{color:#8aa5bf;font-size:12px}
-div[data-baseweb="select"]>div{background:#071827}
-@media(max-width:700px){.block-container{padding:.4rem .3rem 2rem}}
-</style>
-""", unsafe_allow_html=True)
+    <!-- Navigation Tabs -->
+    <nav class="flex space-x-6 px-4 bg-cardBg border-b border-borderCol text-sm overflow-x-auto whitespace-nowrap">
+        <a href="#" class="py-2.5 text-slate-400 hover:text-white font-medium">MARKET</a>
+        <a href="#" class="py-2.5 text-neonGreen border-b-2 border-neonGreen font-semibold">FLOW</a>
+        <a href="#" class="py-2.5 text-slate-400 hover:text-white font-medium flex items-center space-x-1"><span class="text-neonGreen">▲</span> <span>TOP</span></a>
+        <a href="#" class="py-2.5 text-slate-400 hover:text-white font-medium flex items-center space-x-1"><span class="text-neonRed">▼</span> <span>TOP</span></a>
+    </nav>
 
-st.markdown("# ⚡ JARVES <span style='color:#00e6ad'>TRADING</span>", unsafe_allow_html=True)
-st.caption("TRIAL 1.5 • Mobile-first • Market movers • Candlestick chart + possible order-block zones")
+    <!-- Main Container -->
+    <main class="p-4 space-y-4 max-w-7xl mx-auto w-full flex-grow">
+        
+        <!-- Ticker Cards Top Bar -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <!-- Nifty 50 -->
+            <div class="bg-cardBg border border-borderCol p-3 rounded-xl flex justify-between items-center">
+                <div>
+                    <div class="text-[11px] text-slate-400 font-medium">NIFTY 50</div>
+                    <div class="text-base font-bold text-white">24,567.80</div>
+                    <div class="text-xs text-neonGreen font-semibold">+142.35 (0.58%)</div>
+                </div>
+                <div class="text-neonGreen text-xl"><i class="fa-solid fa-chart-line"></i></div>
+            </div>
+            <!-- Bank Nifty -->
+            <div class="bg-cardBg border border-borderCol p-3 rounded-xl flex justify-between items-center">
+                <div>
+                    <div class="text-[11px] text-slate-400 font-medium">BANKNIFTY</div>
+                    <div class="text-base font-bold text-white">52,314.20</div>
+                    <div class="text-xs text-neonGreen font-semibold">+298.75 (0.58%)</div>
+                </div>
+                <div class="text-neonGreen text-xl"><i class="fa-solid fa-chart-line"></i></div>
+            </div>
+            <!-- Sensex -->
+            <div class="bg-cardBg border border-borderCol p-3 rounded-xl flex justify-between items-center">
+                <div>
+                    <div class="text-[11px] text-slate-400 font-medium">SENSEX</div>
+                    <div class="text-base font-bold text-white">80,756.32</div>
+                    <div class="text-xs text-neonGreen font-semibold">+428.17 (0.53%)</div>
+                </div>
+                <div class="text-neonGreen text-xl"><i class="fa-solid fa-chart-line"></i></div>
+            </div>
+        </div>
 
-with st.sidebar:
-    st.header("⚙️ Scanner settings")
-    scan_mode = st.selectbox("Scan universe", ["Watchlist (20)", "First 100 NSE shares"])
-    st.caption("Market data is provided by Yahoo Finance and can be delayed or incomplete.")
-    if st.button("🔄 Refresh data", use_container_width=True):
-        st.cache_data.clear()
+        <!-- Dashboard Grid Layout -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            
+            <!-- Market Flow Chart Section (Left & Center - 2 Cols) -->
+            <div class="lg:col-span-2 bg-cardBg border border-borderCol rounded-2xl p-4 flex flex-col justify-between">
+                <!-- Header -->
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center space-x-2">
+                        <div class="text-neonGreen"><i class="fa-solid fa-chart-area text-lg"></i></div>
+                        <div>
+                            <h2 class="font-bold text-sm text-white">MARKET FLOW</h2>
+                            <p class="text-[11px] text-slate-400">Real-time Order Flow • NSE</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <span class="bg-emerald-950 text-neonGreen text-[10px] px-2 py-0.5 rounded-full flex items-center space-x-1 border border-emerald-800">
+                            <span class="w-1.5 h-1.5 bg-neonGreen rounded-full animate-pulse"></span>
+                            <span>Live</span>
+                        </span>
+                        <select class="bg-slate-800 text-slate-300 text-xs px-2 py-1 rounded border border-borderCol outline-none">
+                            <option>NSE</option>
+                            <option>BSE</option>
+                        </select>
+                    </div>
+                </div>
 
-WATCHLIST = [
-    "RELIANCE", "HDFCBANK", "ICICIBANK", "INFY", "TCS", "SBIN", "AXISBANK",
-    "KOTAKBANK", "ITC", "LT", "BHARTIARTL", "TATAMOTORS", "M&M",
-    "BAJFINANCE", "WIPRO", "ADANIPORTS", "EICHERMOT", "SUNPHARMA",
-    "TATASTEEL", "MARUTI"
-]
-NSE_URL = "https://nsearchives.nseindia.com/content/equities/EQUITY_L.csv"
+                <!-- Main Flow Mock Graphic Area -->
+                <div class="relative bg-darkBg/60 border border-borderCol rounded-xl h-64 p-3 flex flex-col justify-between overflow-hidden">
+                    <!-- Price Movement Axis labels -->
+                    <div class="absolute left-2 top-2 bottom-2 flex flex-col justify-between text-[10px] text-slate-400 font-mono">
+                        <span>+4.5%</span>
+                        <span>+3.0%</span>
+                        <span>+1.5%</span>
+                        <span class="text-white font-bold">0.0%</span>
+                        <span>-1.5%</span>
+                        <span>-3.0%</span>
+                        <span>-4.5%</span>
+                    </div>
+                    
+                    <!-- Zone Badges -->
+                    <div class="flex justify-between items-start z-10 pl-8">
+                        <span class="bg-emerald-950/80 text-neonGreen text-[10px] font-semibold px-2.5 py-1 rounded border border-emerald-800">▲ BULLISH ZONE</span>
+                        <span class="bg-emerald-950/80 text-neonGreen text-[10px] font-semibold px-2.5 py-1 rounded border border-emerald-800">▲ TOP</span>
+                    </div>
 
-@st.cache_data(ttl=300, show_spinner=False)
-def get_symbols(mode):
-    if mode == "Watchlist (20)":
-        return WATCHLIST
-    try:
-        import requests
-        response = requests.get(NSE_URL, headers={"User-Agent": "Mozilla/5.0"}, timeout=12)
-        response.raise_for_status()
-        csv_df = pd.read_csv(pd.io.common.StringIO(response.text))
-        symbol_col = next(c for c in csv_df.columns if c.strip().upper() == "SYMBOL")
-        return csv_df[symbol_col].dropna().astype(str).str.strip().tolist()[:100]
-    except Exception:
-        return WATCHLIST
+                    <!-- Decorative Glowing Flow Path lines placeholder -->
+                    <div class="absolute inset-0 flex items-center justify-center opacity-40 pointer-events-none">
+                        <svg class="w-full h-full" viewBox="0 0 500 200" fill="none">
+                            <path d="M50 100 Q 200 20, 450 40" stroke="#00ff7f" stroke-width="2" stroke-dasharray="4 2"/>
+                            <path d="M50 100 Q 250 100, 450 100" stroke="#ffffff" stroke-width="1.5"/>
+                            <path d="M50 100 Q 200 180, 450 160" stroke="#ff3366" stroke-width="2" stroke-dasharray="4 2"/>
+                        </svg>
+                    </div>
 
-@st.cache_data(ttl=180, show_spinner=False)
-def get_candles(symbol):
-    try:
-        df = yf.download(
-            symbol + ".NS", period="5d", interval="15m",
-            progress=False, auto_adjust=False, threads=False
-        )
-        if df is None or df.empty:
-            return pd.DataFrame()
-        if isinstance(df.columns, pd.MultiIndex):
-            df.columns = df.columns.get_level_values(0)
-        needed = ["Open", "High", "Low", "Close"]
-        if not all(c in df.columns for c in needed):
-            return pd.DataFrame()
-        return df.dropna(subset=needed)
-    except Exception:
-        return pd.DataFrame()
+                    <div class="flex justify-between items-end z-10 pl-8">
+                        <span class="bg-rose-950/80 text-neonRed text-[10px] font-semibold px-2.5 py-1 rounded border border-rose-900">▼ BEARISH ZONE</span>
+                        <span class="bg-rose-950/80 text-neonRed text-[10px] font-semibold px-2.5 py-1 rounded border border-rose-900">▼ BOTTOM</span>
+                    </div>
+                </div>
 
-def analyse(symbol, df):
-    if df.empty or len(df) < 3:
-        return None
-    close = df["Close"].astype(float)
-    price = float(close.iloc[-1])
-    previous = float(close.iloc[-2])
-    change_pct = (price / previous - 1) * 100 if previous else 0.0
+                <!-- Footer Legend -->
+                <div class="flex flex-wrap items-center justify-between mt-3 text-xs text-slate-400">
+                    <div class="flex items-center space-x-4">
+                        <span class="flex items-center space-x-1.5"><span class="w-2.5 h-2.5 bg-neonGreen rounded-full"></span><span>Bullish Flow</span></span>
+                        <span class="flex items-center space-x-1.5"><span class="w-2.5 h-2.5 bg-neonRed rounded-full"></span><span>Bearish Flow</span></span>
+                        <span class="flex items-center space-x-1.5"><span class="w-2.5 h-2.5 bg-blue-500 rounded-full"></span><span>Support / Resistance</span></span>
+                    </div>
+                </div>
+            </div>
 
-    ema9 = float(close.ewm(span=9, adjust=False).mean().iloc[-1])
-    ema21 = float(close.ewm(span=21, adjust=False).mean().iloc[-1])
-    # Trend definition is consistent across all symbols.
-    if ema9 > ema21 and price > ema9:
-        trend = "UPTREND"
-    elif ema9 < ema21 and price < ema9:
-        trend = "DOWNTREND"
-    else:
-        trend = "SIDEWAYS"
+            <!-- Top Movers / Most Active Sidebar (Right - 1 Col) -->
+            <div class="bg-cardBg border border-borderCol rounded-2xl p-4 flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-bold text-sm text-white flex items-center space-x-2">
+                            <i class="fa-solid fa-gear text-neonGreen text-xs"></i>
+                            <span>TOP MOVERS</span>
+                        </h3>
+                    </div>
+                    <!-- Gainers / Losers Switcher -->
+                    <div class="grid grid-cols-2 bg-darkBg p-1 rounded-xl mb-3 border border-borderCol text-xs font-semibold text-center">
+                        <div class="bg-emerald-950 text-neonGreen py-1.5 rounded-lg border border-emerald-800 cursor-pointer">GAINERS</div>
+                        <div class="text-slate-400 py-1.5 cursor-pointer hover:text-white">LOSERS</div>
+                    </div>
 
-    volume = df["Volume"].fillna(0).astype(float) if "Volume" in df.columns else pd.Series(0, index=df.index)
-    avg_volume = float(volume.iloc[-21:-1].mean()) if len(volume) > 2 else 0.0
-    volume_ratio = float(volume.iloc[-1]) / avg_volume if avg_volume > 0 else 0.0
+                    <!-- Stock List Table -->
+                    <div class="space-y-2 text-xs">
+                        <div class="flex justify-between text-slate-400 text-[10px] px-1 border-b border-borderCol pb-1">
+                            <span># SYMBOL</span>
+                            <span>%</span>
+                        </div>
+                        <!-- Row items -->
+                        <div class="flex items-center justify-between bg-darkBg/50 p-2 rounded-lg border border-borderCol/50 hover:border-emerald-500/50 cursor-pointer">
+                            <div class="flex items-center space-x-2 font-semibold text-white">
+                                <span class="text-slate-400 text-[10px]">1</span>
+                                <span class="w-2 h-2 bg-blue-500 rounded-full"></span>
+                                <span>RELIANCE</span>
+                            </div>
+                            <span class="text-neonGreen font-bold">+3.24% <i class="fa-solid fa-chevron-right text-[10px]"></i></span>
+                        </div>
+                        <div class="flex items-center justify-between bg-darkBg/50 p-2 rounded-lg border border-borderCol/50 hover:border-emerald-500/50 cursor-pointer">
+                            <div class="flex items-center space-x-2 font-semibold text-white">
+                                <span class="text-slate-400 text-[10px]">2</span>
+                                <span class="w-2 h-2 bg-blue-400 rounded-full"></span>
+                                <span>TCS</span>
+                            </div>
+                            <span class="text-neonGreen font-bold">+2.87% <i class="fa-solid fa-chevron-right text-[10px]"></i></span>
+                        </div>
+                        <div class="flex items-center justify-between bg-darkBg/50 p-2 rounded-lg border border-borderCol/50 hover:border-emerald-500/50 cursor-pointer">
+                            <div class="flex items-center space-x-2 font-semibold text-white">
+                                <span class="text-slate-400 text-[10px]">3</span>
+                                <span class="w-2 h-2 bg-indigo-500 rounded-full"></span>
+                                <span>HDFCBANK</span>
+                            </div>
+                            <span class="text-neonGreen font-bold">+2.31% <i class="fa-solid fa-chevron-right text-[10px]"></i></span>
+                        </div>
+                        <div class="flex items-center justify-between bg-darkBg/50 p-2 rounded-lg border border-borderCol/50 hover:border-emerald-500/50 cursor-pointer">
+                            <div class="flex items-center space-x-2 font-semibold text-white">
+                                <span class="text-slate-400 text-[10px]">4</span>
+                                <span class="w-2 h-2 bg-sky-500 rounded-full"></span>
+                                <span>INFY</span>
+                            </div>
+                            <span class="text-neonGreen font-bold">+1.95% <i class="fa-solid fa-chevron-right text-[10px]"></i></span>
+                        </div>
+                    </div>
+                </div>
 
-    recent = df.tail(30)
-    support = float(recent["Low"].min())
-    resistance = float(recent["High"].max())
+                <!-- Most Active Mini Widget -->
+                <div class="mt-4 pt-3 border-t border-borderCol">
+                    <div class="text-xs font-bold text-white mb-2 flex items-center space-x-1">
+                        <i class="fa-solid fa-chart-bar text-neonGreen"></i>
+                        <span>MOST ACTIVE</span>
+                    </div>
+                    <div class="space-y-1.5 text-[11px]">
+                        <div class="flex justify-between items-center text-slate-300">
+                            <span>RELIANCE</span>
+                            <div class="w-20 bg-slate-800 h-1.5 rounded-full overflow-hidden"><div class="bg-neonGreen w-4/5 h-full"></div></div>
+                            <span class="text-slate-400">12.4M</span>
+                        </div>
+                        <div class="flex justify-between items-center text-slate-300">
+                            <span>TCS</span>
+                            <div class="w-20 bg-slate-800 h-1.5 rounded-full overflow-hidden"><div class="bg-neonGreen w-3/5 h-full"></div></div>
+                            <span class="text-slate-400">8.9M</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-    bullish_ob = None
-    bearish_ob = None
-    candles = df.tail(24)
-    for i in range(len(candles) - 1, 0, -1):
-        previous_candle = candles.iloc[i - 1]
-        current_candle = candles.iloc[i]
-        if (bullish_ob is None and previous_candle["Close"] < previous_candle["Open"]
-                and current_candle["Close"] > current_candle["Open"]
-                and current_candle["Close"] > previous_candle["High"]):
-            bullish_ob = (float(previous_candle["Low"]), float(previous_candle["High"]))
-        if (bearish_ob is None and previous_candle["Close"] > previous_candle["Open"]
-                and current_candle["Close"] < current_candle["Open"]
-                and current_candle["Close"] < previous_candle["Low"]):
-            bearish_ob = (float(previous_candle["Low"]), float(previous_candle["High"]))
-        if bullish_ob and bearish_ob:
-            break
+        </div>
 
-    return {
-        "Symbol": symbol, "Price": price, "Change %": change_pct,
-        "Trend": trend, "Vol Ratio": volume_ratio,
-        "Support": support, "Resistance": resistance,
-        "Bull OB": bullish_ob, "Bear OB": bearish_ob
-    }
+    </main>
 
-symbols = get_symbols(scan_mode)
-candle_data = {}
-rows = []
-with st.spinner(f"Scanning {len(symbols)} shares. This can take a little time…"):
-    for symbol in symbols:
-        df = get_candles(symbol)
-        if not df.empty:
-            candle_data[symbol] = df
-            result = analyse(symbol, df)
-            if result:
-                rows.append(result)
+    <!-- Bottom Navigation Bar -->
+    <footer class="sticky bottom-0 bg-cardBg border-t border-borderCol py-2.5 px-6 flex justify-between items-center text-xs text-slate-400">
+        <a href="#" class="flex flex-col items-center text-neonGreen">
+            <i class="fa-solid fa-house text-base"></i>
+            <span class="text-[10px] mt-0.5">Home</span>
+        </a>
+        <a href="#" class="flex flex-col items-center hover:text-white">
+            <i class="fa-solid fa-magnifying-glass text-base"></i>
+            <span class="text-[10px] mt-0.5">Scanner</span>
+        </a>
+        <a href="#" class="flex flex-col items-center hover:text-white">
+            <i class="fa-regular fa-star text-base"></i>
+            <span class="text-[10px] mt-0.5">Watchlist</span>
+        </a>
+        <a href="#" class="flex flex-col items-center hover:text-white">
+            <i class="fa-solid fa-briefcase text-base"></i>
+            <span class="text-[10px] mt-0.5">Portfolio</span>
+        </a>
+        <a href="#" class="flex flex-col items-center hover:text-white">
+            <i class="fa-solid fa-gear text-base"></i>
+            <span class="text-[10px] mt-0.5">Settings</span>
+        </a>
+    </footer>
 
-market = pd.DataFrame(rows)
-if market.empty:
-    st.error("Market data abhi nahi mila. Refresh karein ya market hours mein dobara try karein.")
-    st.stop()
-
-market = market.sort_values("Change %", ascending=False).reset_index(drop=True)
-gainers = market.head(10)
-losers = market.nsmallest(10, "Change %")
-most_active = market.sort_values("Vol Ratio", ascending=False).head(10)
-
-st.markdown('<div class="panel"><b>◉ MARKET MOVERS</b><br><span class="small">Strong price movers and higher-volume shares are highlighted. Select a share in the chart tab to inspect possible order-block zones.</span></div>', unsafe_allow_html=True)
-
-m1, m2, m3, m4 = st.columns(4)
-m1.metric("Shares received", len(market))
-m2.metric("Gainers", int((market["Change %"] > 0).sum()))
-m3.metric("Losers", int((market["Change %"] < 0).sum()))
-m4.metric("Volume ≥ 1.5×", int((market["Vol Ratio"] >= 1.5).sum()))
-
-flow_tab, movers_tab, chart_tab, scanner_tab = st.tabs(
-    ["〰️ FLOW", "▲▼ MOVERS", "📊 CHART + ORDER BLOCKS", "📋 SCANNER"]
-)
-
-with flow_tab:
-    st.subheader("LIVE MARKET FLOW")
-    st.caption("Visual summary of price movers. This is not exchange order-book depth; actual live updates depend on the data provider.")
-    fig = go.Figure()
-    x = np.linspace(0, 1, 80)
-    for j, (_, row) in enumerate(gainers.head(8).iterrows()):
-        y = 0.5 + (j + 1) * 0.035 * (x ** 0.7)
-        fig.add_trace(go.Scatter(
-            x=x, y=y, mode="lines",
-            line=dict(width=1.5, color="rgba(0,230,173,0.75)"),
-            name=f'{row["Symbol"]} {row["Change %"]:+.2f}%'
-        ))
-    for j, (_, row) in enumerate(losers.head(8).iterrows()):
-        y = 0.5 - (j + 1) * 0.035 * (x ** 0.7)
-        fig.add_trace(go.Scatter(
-            x=x, y=y, mode="lines",
-            line=dict(width=1.5, color="rgba(255,80,124,0.75)"),
-            name=f'{row["Symbol"]} {row["Change %"]:+.2f}%'
-        ))
-    fig.update_layout(
-        height=390, template="plotly_dark", paper_bgcolor="#050a14",
-        plot_bgcolor="#050a14", margin=dict(l=5, r=5, t=10, b=5),
-        xaxis=dict(visible=False), yaxis=dict(visible=False),
-        legend=dict(orientation="h", y=-0.15)
-    )
-    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
-    st.subheader("Strongest movers")
-    st.dataframe(gainers[["Symbol", "Price", "Change %", "Trend", "Vol Ratio"]].round(2),
-                 use_container_width=True, hide_index=True)
-
-with movers_tab:
-    selected_list = st.radio("Highlight list", ["Gainers", "Losers", "Most Active"], horizontal=True)
-    view = gainers if selected_list == "Gainers" else losers if selected_list == "Losers" else most_active
-    for _, row in view.iterrows():
-        color = "#00e6ad" if row["Change %"] >= 0 else "#ff507c"
-        st.markdown(
-            f'<div class="panel" style="display:flex;justify-content:space-between;align-items:center">'
-            f'<div><b>{row["Symbol"]}</b><br><span class="small">₹{row["Price"]:,.2f} · Vol {row["Vol Ratio"]:.2f}× · {row["Trend"]}</span></div>'
-            f'<b style="color:{color}">{row["Change %"]:+.2f}%</b></div>',
-            unsafe_allow_html=True
-        )
-
-with chart_tab:
-    options = market["Symbol"].tolist()
-    selected_symbol = st.selectbox("🔎 Search / select share", options)
-    row = market.loc[market["Symbol"] == selected_symbol].iloc[0]
-    df = candle_data[selected_symbol]
-
-    p1, p2, p3, p4 = st.columns(4)
-    p1.metric("Price", f'₹{row["Price"]:,.2f}', f'{row["Change %"]:+.2f}%')
-    p2.metric("Trend", row["Trend"])
-    p3.metric("Volume ratio", f'{row["Vol Ratio"]:.2f}×')
-    p4.metric("Support / Resistance", f'{row["Support"]:.2f} / {row["Resistance"]:.2f}')
-
-    chart = go.Figure()
-    chart.add_trace(go.Candlestick(
-        x=df.index, open=df["Open"], high=df["High"], low=df["Low"], close=df["Close"],
-        name=selected_symbol, increasing_line_color="#00e6ad", decreasing_line_color="#ff507c"
-    ))
-    if row["Bull OB"]:
-        low, high = row["Bull OB"]
-        chart.add_hrect(y0=low, y1=high, fillcolor="rgba(0,230,173,0.20)",
-                        line_color="#00e6ad", annotation_text="Possible Bullish OB")
-    if row["Bear OB"]:
-        low, high = row["Bear OB"]
-        chart.add_hrect(y0=low, y1=high, fillcolor="rgba(255,80,124,0.18)",
-                        line_color="#ff507c", annotation_text="Possible Bearish OB")
-    chart.add_hline(y=row["Support"], line_dash="dot", line_color="#4b9dff", annotation_text="Support")
-    chart.add_hline(y=row["Resistance"], line_dash="dot", line_color="#f6c85f", annotation_text="Resistance")
-    chart.update_layout(
-        height=470, template="plotly_dark", paper_bgcolor="#050a14",
-        plot_bgcolor="#050a14", margin=dict(l=5, r=5, t=20, b=5),
-        xaxis_rangeslider_visible=False
-    )
-    st.plotly_chart(chart, use_container_width=True, config={"displayModeBar": False})
-
-    ob1, ob2 = st.columns(2)
-    with ob1:
-        st.markdown("#### 🟢 Bullish order-block candidate")
-        if row["Bull OB"]:
-            st.success(f'₹{row["Bull OB"][0]:.2f} – ₹{row["Bull OB"][1]:.2f}')
-        else:
-            st.info("Available candles mein clear bullish candidate nahi mila.")
-    with ob2:
-        st.markdown("#### 🔴 Bearish order-block candidate")
-        if row["Bear OB"]:
-            st.error(f'₹{row["Bear OB"][0]:.2f} – ₹{row["Bear OB"][1]:.2f}')
-        else:
-            st.info("Available candles mein clear bearish candidate nahi mila.")
-    st.caption("Order-block zones are rule-based estimates, not guaranteed institutional zones or trading recommendations.")
-
-with scanner_tab:
-    display = market[["Symbol", "Price", "Change %", "Trend", "Vol Ratio", "Support", "Resistance"]].copy()
-    st.dataframe(display.round(2), use_container_width=True, hide_index=True, height=520)
-
-st.markdown("---")
-st.caption(
-    f"JARVES TRADING • Yahoo Finance data • Rendered {datetime.now().strftime('%d-%b-%Y %H:%M:%S')} • "
-    "Verify prices with your broker before trading. This app does not place orders."
-)
+</body>
+</html>
