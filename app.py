@@ -4,14 +4,12 @@ import yfinance as yf
 import pandas as pd
 import requests
 import io
-import concurrent.futures
 
 # Page setup
 st.set_page_config(page_title="Jarves Trading Pro - Super Intraday Dashboard", layout="wide")
 
 @st.cache_data(ttl=3600)
 def get_all_nse_symbols():
-    """Fetch official listed equity symbols from NSE India CSV safely"""
     url = "https://archives.nseindia.com/content/equities/EQUITY_L.csv"
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36"
@@ -30,56 +28,48 @@ def get_all_nse_symbols():
 
 ALL_NSE_SYMBOLS = get_all_nse_symbols()
 
-def fetch_single_ticker(symbol):
-    """Helper function to fetch individual stock data concurrently via multi-threading"""
+@st.cache_data(ttl=60)
+def fetch_live_market_data(symbols_list, limit=100):
+    """Ultra-fast bulk market data fetcher using yfinance download"""
+    sample_symbols = symbols_list[:limit]
+    market_data = []
+    
     try:
-        ticker = yf.Ticker(symbol)
-        info = ticker.fast_info
-        
-        ltp = info.last_price if hasattr(info, 'last_price') and info.last_price is not None else 0
-        prev_close = info.previous_close if hasattr(info, 'previous_close') and info.previous_close is not None else ltp
-        volume = info.last_volume if hasattr(info, 'last_volume') and info.last_volume is not None else 0
-        market_cap = info.market_cap if hasattr(info, 'market_cap') and info.market_cap is not None else 0
-        
-        if prev_close and prev_close > 0 and ltp > 0:
-            change = ltp - prev_close
-            p_change = (change / prev_close) * 100
-        else:
-            change, p_change = 0, 0
-            
-        clean_symbol = symbol.replace(".NS", "")
-        mcap_cr = round(market_cap / 10000000, 2) if market_cap else 0
-        oi_build_score = round((p_change * 1.5) + (volume / 500000), 2)
-        
-        if ltp > 0:
-            return {
-                "Symbol": clean_symbol,
-                "LTP": round(ltp, 2),
-                "Change": round(change, 2),
-                "P_Change": round(p_change, 2),
-                "Volume": int(volume),
-                "Volume_Str": f"{round(volume/1000000, 2)}M" if volume >= 1000000 else f"{round(volume/1000, 1)}K",
-                "MarketCap_Cr": mcap_cr,
-                "OI_Score": oi_build_score
-            }
+        data = yf.download(sample_symbols, period="2d", group_by="ticker", progress=False, threads=True)
+        for symbol in sample_symbols:
+            clean_sym = symbol.replace(".NS", "")
+            try:
+                if len(sample_symbols) == 1:
+                    df_sym = data
+                else:
+                    df_sym = data[symbol]
+                
+                if not df_sym.empty and len(df_sym) >= 1:
+                    close_prices = df_sym['Close'].dropna()
+                    if len(close_prices) >= 1:
+                        ltp = float(close_prices.iloc[-1])
+                        prev_close = float(close_prices.iloc[-2]) if len(close_prices) >= 2 else ltp
+                        change = ltp - prev_close
+                        p_change = (change / prev_close) * 100 if prev_close > 0 else 0
+                        
+                        volume = float(df_sym['Volume'].iloc[-1]) if 'Volume' in df_sym.columns and not df_sym['Volume'].empty else 0
+                        
+                        market_data.append({
+                            "Symbol": clean_sym,
+                            "LTP": round(ltp, 2),
+                            "Change": round(change, 2),
+                            "P_Change": round(p_change, 2),
+                            "Volume": int(volume),
+                            "Volume_Str": f"{round(volume/1000000, 2)}M" if volume >= 1000000 else f"{round(volume/1000, 1)}K",
+                            "MarketCap_Cr": 0,
+                            "OI_Score": round(p_change * 1.5, 2)
+                        })
+            except Exception:
+                continue
     except Exception:
         pass
-    return None
-
-@st.cache_data(ttl=60)
-def fetch_live_market_data(symbols_list, limit=200):
-    """Ultra-fast multi-threaded market data fetcher"""
-    data = []
-    sample_symbols = symbols_list[:limit]
-    
-    # Using ThreadPoolExecutor for concurrent multi-threaded requests
-    with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
-        results = executor.map(fetch_single_ticker, sample_symbols)
-        for res in results:
-            if res is not None:
-                data.append(res)
-                
-    return pd.DataFrame(data)
+        
+    return pd.DataFrame(market_data)
 
 # Navigation
 st.sidebar.title("📌 Navigation")
@@ -93,11 +83,11 @@ if "selected_stock" not in st.session_state:
 # ==========================================
 if page == "🚀 SUPER INTRADAY":
     st.markdown("<h2 style='color:#00ff7f;'>🚀 SUPER INTRADAY FAST SCANNER (20 Bullish & 20 Bearish)</h2>", unsafe_allow_html=True)
-    st.caption("Multi-threaded fast scan with live market direction, 20 bullish stocks, 20 bearish stocks, and order block charts.")
+    st.caption("Instant bulk market scan with live market direction, 20 bullish stocks, 20 bearish stocks, and order block charts.")
 
-    scan_limit = st.sidebar.slider("Fast Scan Range (Stocks Count)", min_value=50, max_value=len(ALL_NSE_SYMBOLS), value=200, step=50)
+    scan_limit = st.sidebar.slider("Fast Scan Range (Stocks Count)", min_value=50, max_value=len(ALL_NSE_SYMBOLS), value=100, step=50)
     
-    with st.spinner("Multi-threading active: Fast scanning market for bullish and bearish setups..."):
+    with st.spinner("Instant bulk scanning market..."):
         df_market = fetch_live_market_data(ALL_NSE_SYMBOLS, limit=scan_limit)
 
     if not df_market.empty:
@@ -116,7 +106,7 @@ if page == "🚀 SUPER INTRADAY":
                     <h2 style="color:{dir_color}; margin:0; font-size:24px; font-weight:bold;">{market_dir} ({bullish_pct}% Advances)</h2>
                 </div>
                 <div style="text-align:right;">
-                    <span style="color:#94a3b8; font-size:12px;">FAST SCANNER STATUS</span>
+                    <span style="color:#94a3b8; font-size:12px;">SCANNER STATUS</span>
                     <h3 style="color:#ffffff; margin:0; font-size:18px;">{total_count} / {len(ALL_NSE_SYMBOLS)} Scanned</h3>
                 </div>
             </div>
@@ -184,7 +174,7 @@ if page == "🚀 SUPER INTRADAY":
 # PAGE 2: INTRADAY HOT TRACKER (PURE MARKET)
 # ==========================================
 elif page == "🔥 Intraday Hot Tracker (Pure Market)":
-    scan_limit = st.sidebar.slider("Live Scan Range (Stocks Count)", min_value=50, max_value=len(ALL_NSE_SYMBOLS), value=200, step=50)
+    scan_limit = st.sidebar.slider("Live Scan Range (Stocks Count)", min_value=50, max_value=len(ALL_NSE_SYMBOLS), value=100, step=50)
     
     with st.spinner("Processing live market volume and trends..."):
         df_market = fetch_live_market_data(ALL_NSE_SYMBOLS, limit=scan_limit)
