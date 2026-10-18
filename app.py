@@ -10,13 +10,13 @@ st.set_page_config(page_title="Jarves Trading Pro - Super Intraday Dashboard", l
 
 @st.cache_data(ttl=3600)
 def get_all_nse_symbols():
-    """Fetch all official listed equity symbols from NSE India CSV"""
+    """Fetch official listed equity symbols from NSE India CSV safely"""
     url = "https://archives.nseindia.com/content/equities/EQUITY_L.csv"
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36"
     }
     try:
-        response = requests.get(url, headers=headers, timeout=10)
+        response = requests.get(url, headers=headers, timeout=5)
         if response.status_code == 200:
             df = pd.read_csv(io.StringIO(response.text))
             if 'SERIES' in df.columns:
@@ -30,8 +30,8 @@ def get_all_nse_symbols():
 ALL_NSE_SYMBOLS = get_all_nse_symbols()
 
 @st.cache_data(ttl=60)
-def fetch_live_market_data(symbols_list, limit=400):
-    """Fast fetch live market price, market cap, and volume for rapid 1-minute scanning"""
+def fetch_live_market_data(symbols_list, limit=150):
+    """Optimized fast fetch for live market data to avoid black screen timeout"""
     data = []
     sample_symbols = symbols_list[:limit]
     
@@ -87,15 +87,14 @@ if "selected_stock" not in st.session_state:
 # ==========================================
 if page == "🚀 SUPER INTRADAY":
     st.markdown("<h2 style='color:#00ff7f;'>🚀 SUPER INTRADAY FAST SCANNER (20 Bullish & 20 Bearish)</h2>", unsafe_allow_html=True)
-    st.caption("Fast 1-minute market scan with live market direction, 20 bullish stocks, 20 bearish stocks, and order block charts.")
+    st.caption("Fast market scan with live market direction, 20 bullish stocks, 20 bearish stocks, and order block charts.")
 
-    scan_limit = st.sidebar.slider("Fast Scan Range (Stocks Count)", min_value=100, max_value=len(ALL_NSE_SYMBOLS), value=400, step=100)
+    scan_limit = st.sidebar.slider("Fast Scan Range (Stocks Count)", min_value=50, max_value=len(ALL_NSE_SYMBOLS), value=150, step=50)
     
     with st.spinner("Fast scanning market for bullish and bearish setups..."):
         df_market = fetch_live_market_data(ALL_NSE_SYMBOLS, limit=scan_limit)
 
     if not df_market.empty:
-        # OVERALL MARKET DIRECTION AT TOP
         positive_count = len(df_market[df_market["P_Change"] > 0])
         total_count = len(df_market)
         bullish_pct = round((positive_count / total_count) * 100, 1) if total_count > 0 else 50
@@ -119,7 +118,6 @@ if page == "🚀 SUPER INTRADAY":
             unsafe_allow_html=True
         )
 
-        # EXACTLY 20 BULLISH AND 20 BEARISH STOCKS
         top_bullish = df_market.sort_values(by="P_Change", ascending=False).head(20)
         top_bearish = df_market.sort_values(by="P_Change", ascending=True).head(20)
 
@@ -139,7 +137,6 @@ if page == "🚀 SUPER INTRADAY":
 
         st.divider()
 
-        # LIVE CHART & ORDER BLOCK ZONE DISPLAY
         st.markdown(f"### 📈 Live Chart & Order Block Zone: <span style='color:#00ff7f;'>{st.session_state.selected_stock}</span>", unsafe_allow_html=True)
         
         tv_symbol = f"NSE:{st.session_state.selected_stock}"
@@ -174,14 +171,16 @@ if page == "🚀 SUPER INTRADAY":
         </html>
         """
         components.html(tv_widget, height=540, scrolling=False)
+    else:
+        st.warning("Data load ho raha hai, kripya thoda intezaar karein ya page refresh karein.")
 
 # ==========================================
 # PAGE 2: INTRADAY HOT TRACKER (PURE MARKET)
 # ==========================================
 elif page == "🔥 Intraday Hot Tracker (Pure Market)":
-    scan_limit = st.sidebar.slider("Live Scan Range (Stocks Count)", min_value=100, max_value=len(ALL_NSE_SYMBOLS), value=400, step=100)
+    scan_limit = st.sidebar.slider("Live Scan Range (Stocks Count)", min_value=50, max_value=len(ALL_NSE_SYMBOLS), value=150, step=50)
     
-    with st.spinner("Processing live market volume, open interest, and trend metrics..."):
+    with st.spinner("Processing live market volume and trends..."):
         df_market = fetch_live_market_data(ALL_NSE_SYMBOLS, limit=scan_limit)
 
     if not df_market.empty:
