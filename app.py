@@ -29,9 +29,9 @@ def get_all_nse_symbols():
 
 ALL_NSE_SYMBOLS = get_all_nse_symbols()
 
-@st.cache_data(ttl=120)
-def fetch_live_market_data(symbols_list, limit=200):
-    """Fetch live market price, market cap, volume, and simulated OI metrics"""
+@st.cache_data(ttl=60)
+def fetch_live_market_data(symbols_list, limit=400):
+    """Fast fetch live market price, market cap, and volume for rapid 1-minute scanning"""
     data = []
     sample_symbols = symbols_list[:limit]
     
@@ -54,7 +54,6 @@ def fetch_live_market_data(symbols_list, limit=200):
                     change, p_change = 0, 0
                     
                 clean_symbol = symbol.replace(".NS", "")
-                
                 mcap_cr = round(market_cap / 10000000, 2) if market_cap else 0
                 oi_build_score = round((p_change * 1.5) + (volume / 500000), 2)
                 
@@ -84,15 +83,15 @@ if "selected_stock" not in st.session_state:
     st.session_state.selected_stock = "RELIANCE"
 
 # ==========================================
-# PAGE 1: SUPER INTRADAY (NEW DEDICATED PAGE)
+# PAGE 1: SUPER INTRADAY
 # ==========================================
 if page == "🚀 SUPER INTRADAY":
-    st.markdown("<h2 style='color:#00ff7f;'>🚀 SUPER INTRADAY MOVER & ORDER BLOCK SCANNER</h2>", unsafe_allow_html=True)
-    st.caption("High Volume, Top Gainers aur Losers ko ek click me dekhein aur Order Block Zone highlight karein.")
+    st.markdown("<h2 style='color:#00ff7f;'>🚀 SUPER INTRADAY FAST SCANNER (20 Bullish & 20 Bearish)</h2>", unsafe_allow_html=True)
+    st.caption("Fast 1-minute market scan with live market direction, 20 bullish stocks, 20 bearish stocks, and order block charts.")
 
-    scan_limit = st.sidebar.slider("Live Scan Range (Stocks Count)", min_value=100, max_value=len(ALL_NSE_SYMBOLS), value=200, step=100)
+    scan_limit = st.sidebar.slider("Fast Scan Range (Stocks Count)", min_value=100, max_value=len(ALL_NSE_SYMBOLS), value=400, step=100)
     
-    with st.spinner("Processing Super Intraday volume surge and price trends..."):
+    with st.spinner("Fast scanning market for bullish and bearish setups..."):
         df_market = fetch_live_market_data(ALL_NSE_SYMBOLS, limit=scan_limit)
 
     if not df_market.empty:
@@ -112,37 +111,30 @@ if page == "🚀 SUPER INTRADAY":
                     <h2 style="color:{dir_color}; margin:0; font-size:24px; font-weight:bold;">{market_dir} ({bullish_pct}% Advances)</h2>
                 </div>
                 <div style="text-align:right;">
-                    <span style="color:#94a3b8; font-size:12px;">ACTIVE SCANNER</span>
-                    <h3 style="color:#ffffff; margin:0; font-size:18px;">{total_count} / {len(ALL_NSE_SYMBOLS)} Live Stocks</h3>
+                    <span style="color:#94a3b8; font-size:12px;">FAST SCANNER STATUS</span>
+                    <h3 style="color:#ffffff; margin:0; font-size:18px;">{total_count} / {len(ALL_NSE_SYMBOLS)} Scanned</h3>
                 </div>
             </div>
             """, 
             unsafe_allow_html=True
         )
 
-        # SUPER INTRADAY HIGH VOLUME & GAINERS/LOSERS CARDS
-        top_gainers = df_market.sort_values(by="P_Change", ascending=False).head(10)
-        top_losers = df_market.sort_values(by="P_Change", ascending=True).head(10)
-        high_volume = df_market.sort_values(by="Volume", ascending=False).head(10)
+        # EXACTLY 20 BULLISH AND 20 BEARISH STOCKS
+        top_bullish = df_market.sort_values(by="P_Change", ascending=False).head(20)
+        top_bearish = df_market.sort_values(by="P_Change", ascending=True).head(20)
 
-        col1, col2, col3 = st.columns(3)
+        col1, col2 = st.columns(2)
         
         with col1:
-            st.markdown("<h3 style='color:#00ff7f; font-size:16px;'>⚡ GAINERS (High Upward Movement)</h3>", unsafe_allow_html=True)
-            for _, row in top_gainers.iterrows():
-                if st.button(f"🟢 {row['Symbol']} | ₹{row['LTP']} (+{row['P_Change']}%)", key=f"super_g_{row['Symbol']}"):
+            st.markdown(f"<h3 style='color:#00ff7f; font-size:16px;'>🟢 TOP 20 BULLISH STOCKS</h3>", unsafe_allow_html=True)
+            for _, row in top_bullish.iterrows():
+                if st.button(f"📈 {row['Symbol']} | ₹{row['LTP']} (+{row['P_Change']}%)", key=f"super_bull_{row['Symbol']}"):
                     st.session_state.selected_stock = row['Symbol']
                 
         with col2:
-            st.markdown("<h3 style='color:#ff3366; font-size:16px;'>🔻 LOSERS (High Downward Movement)</h3>", unsafe_allow_html=True)
-            for _, row in top_losers.iterrows():
-                if st.button(f"🔴 {row['Symbol']} | ₹{row['LTP']} ({row['P_Change']}%)", key=f"super_l_{row['Symbol']}"):
-                    st.session_state.selected_stock = row['Symbol']
-
-        with col3:
-            st.markdown("<h3 style='color:#3b82f6; font-size:16px;'>🔥 HIGH VOLUME SURGE SHARES</h3>", unsafe_allow_html=True)
-            for _, row in high_volume.iterrows():
-                if st.button(f"📊 {row['Symbol']} | Vol: {row['Volume_Str']} ({row['P_Change']}%)", key=f"super_v_{row['Symbol']}"):
+            st.markdown(f"<h3 style='color:#ff3366; font-size:16px;'>🔴 TOP 20 BEARISH STOCKS</h3>", unsafe_allow_html=True)
+            for _, row in top_bearish.iterrows():
+                if st.button(f"📉 {row['Symbol']} | ₹{row['LTP']} ({row['P_Change']}%)", key=f"super_bear_{row['Symbol']}"):
                     st.session_state.selected_stock = row['Symbol']
 
         st.divider()
@@ -187,7 +179,7 @@ if page == "🚀 SUPER INTRADAY":
 # PAGE 2: INTRADAY HOT TRACKER (PURE MARKET)
 # ==========================================
 elif page == "🔥 Intraday Hot Tracker (Pure Market)":
-    scan_limit = st.sidebar.slider("Live Scan Range (Stocks Count)", min_value=100, max_value=len(ALL_NSE_SYMBOLS), value=200, step=100)
+    scan_limit = st.sidebar.slider("Live Scan Range (Stocks Count)", min_value=100, max_value=len(ALL_NSE_SYMBOLS), value=400, step=100)
     
     with st.spinner("Processing live market volume, open interest, and trend metrics..."):
         df_market = fetch_live_market_data(ALL_NSE_SYMBOLS, limit=scan_limit)
