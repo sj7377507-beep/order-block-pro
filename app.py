@@ -3,7 +3,7 @@ import streamlit as st
 # Page configuration
 st.set_page_config(page_title="Jarves Trading Dashboard", layout="wide")
 
-# HTML and Tailwind Dashboard Code
+# Full HTML and Tailwind Dashboard Code
 html_code = """
 <!DOCTYPE html>
 <html lang="en" class="dark">
@@ -100,7 +100,121 @@ html_code = """
             </div>
         </div>
 
+        <!-- Dashboard Grid Layout -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            
+            <!-- Market Flow Chart Section -->
+            <div class="lg:col-span-2 bg-cardBg border border-borderCol rounded-2xl p-4 flex flex-col justify-between">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center space-x-2">
+                        <div class="text-neonGreen"><i class="fa-solid fa-chart-area text-lg"></i></div>
+                        <div>
+                            <h2 class="font-bold text-sm text-white">MARKET FLOW</h2>
+                            <p class="text-[11px] text-slate-400">Real-time Order Flow &bull; NSE</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <span class="bg-emerald-950 text-neonGreen text-[10px] px-2 py-0.5 rounded-full flex items-center space-x-1 border border-emerald-800">
+                            <span class="w-1.5 h-1.5 bg-neonGreen rounded-full animate-pulse"></span>
+                            <span>Live</span>
+                        </span>
+                        <select class="bg-slate-800 text-slate-300 text-xs px-2 py-1 rounded border border-borderCol outline-none">
+                            <option>NSE</option>
+                            <option>BSE</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="relative bg-darkBg/60 border border-borderCol rounded-xl h-64 p-3 flex flex-col justify-between overflow-hidden">
+                    <div class="absolute left-2 top-2 bottom-2 flex flex-col justify-between text-[10px] text-slate-400 font-mono">
+                        <span>+4.5%</span>
+                        <span>+3.0%</span>
+                        <span>+1.5%</span>
+                        <span class="text-white font-bold">0.0%</span>
+                        <span>-1.5%</span>
+                        <span>-3.0%</span>
+                        <span>-4.5%</span>
+                    </div>
+                    
+                    <div class="flex justify-between items-start z-10 pl-8">
+                        <span class="bg-emerald-950/80 text-neonGreen text-[10px] font-semibold px-2.5 py-1 rounded border border-emerald-800">&#9650; BULLISH ZONE</span>
+                        <span class="bg-emerald-950/80 text-neonGreen text-[10px] font-semibold px-2.5 py-1 rounded border border-emerald-800">&#9650; TOP</span>
+                    </div>
+
+                    <div class="flex justify-between items-end z-10 pl-8">
+                        <span class="bg-rose-950/80 text-neonRed text-[10px] font-semibold px-2.5 py-1 rounded border border-rose-900">&#9660; BEARISH ZONE</span>
+                        <span class="bg-rose-950/80 text-neonRed text-[10px] font-semibold px-2.5 py-1 rounded border border-rose-900">&#9660; BOTTOM</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Movers Sidebar -->
+            <div class="bg-cardBg border border-borderCol rounded-2xl p-4 flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-bold text-sm text-white flex items-center space-x-2">
+                            <i class="fa-solid fa-gear text-neonGreen text-xs"></i>
+                            <span>TOP MOVERS</span>
+                        </h3>
+                    </div>
+                    <div class="grid grid-cols-2 bg-darkBg p-1 rounded-xl mb-3 border border-borderCol text-xs font-semibold text-center">
+                        <div class="bg-emerald-950 text-neonGreen py-1.5 rounded-lg border border-emerald-800 cursor-pointer">GAINERS</div>
+                        <div class="text-slate-400 py-1.5 cursor-pointer hover:text-white">LOSERS</div>
+                    </div>
+
+                    <div class="space-y-2 text-xs">
+                        <div class="flex justify-between text-slate-400 text-[10px] px-1 border-b border-borderCol pb-1">
+                            <span># SYMBOL</span>
+                            <span>%</span>
+                        </div>
+                        <div class="flex items-center justify-between bg-darkBg/50 p-2 rounded-lg border border-borderCol/50">
+                            <div class="flex items-center space-x-2 font-semibold text-white">
+                                <span class="text-slate-400 text-[10px]">1</span>
+                                <span class="w-2 h-2 bg-blue-500 rounded-full"></span>
+                                <span>RELIANCE</span>
+                            </div>
+                            <span class="text-neonGreen font-bold">+3.24%</span>
+                        </div>
+                        <div class="flex items-center justify-between bg-darkBg/50 p-2 rounded-lg border border-borderCol/50">
+                            <div class="flex items-center space-x-2 font-semibold text-white">
+                                <span class="text-slate-400 text-[10px]">2</span>
+                                <span class="w-2 h-2 bg-blue-400 rounded-full"></span>
+                                <span>TCS</span>
+                            </div>
+                            <span class="text-neonGreen font-bold">+2.87%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
     </main>
+
+    <!-- Bottom Navigation Bar -->
+    <footer class="sticky bottom-0 bg-cardBg border-t border-borderCol py-2.5 px-6 flex justify-between items-center text-xs text-slate-400">
+        <a href="#" class="flex flex-col items-center text-neonGreen">
+            <i class="fa-solid fa-house text-base"></i>
+            <span class="text-[10px] mt-0.5">Home</span>
+        </a>
+        <a href="#" class="flex flex-col items-center hover:text-white">
+            <i class="fa-solid fa-magnifying-glass text-base"></i>
+            <span class="text-[10px] mt-0.5">Scanner</span>
+        </a>
+        <a href="#" class="flex flex-col items-center hover:text-white">
+            <i class="fa-regular fa-star text-base"></i>
+            <span class="text-[10px] mt-0.5">Watchlist</span>
+        </a>
+        <a href="#" class="flex flex-col items-center hover:text-white">
+            <i class="fa-solid fa-briefcase text-base"></i>
+            <span class="text-[10px] mt-0.5">Portfolio</span>
+        </a>
+        <a href="#" class="flex flex-col items-center hover:text-white">
+            <i class="fa-solid fa-gear text-base"></i>
+            <span class="text-[10px] mt-0.5">Settings</span>
+        </a>
+    </footer>
+
 </body>
 </html>
 """
