@@ -6,7 +6,7 @@ import requests
 import io
 
 # Page setup
-st.set_page_config(page_title="Jarves Trading Pro - Advanced Market Analytics", layout="wide")
+st.set_page_config(page_title="Jarves Trading Pro - Super Intraday Dashboard", layout="wide")
 
 @st.cache_data(ttl=3600)
 def get_all_nse_symbols():
@@ -55,7 +55,6 @@ def fetch_live_market_data(symbols_list, limit=200):
                     
                 clean_symbol = symbol.replace(".NS", "")
                 
-                # Calculate metric score for Open Interest & Volume surge combined with Market Cap
                 mcap_cr = round(market_cap / 10000000, 2) if market_cap else 0
                 oi_build_score = round((p_change * 1.5) + (volume / 500000), 2)
                 
@@ -79,24 +78,25 @@ def fetch_live_market_data(symbols_list, limit=200):
 
 # Navigation
 st.sidebar.title("📌 Navigation")
-page = st.sidebar.radio("Go to Page", ["🔥 Intraday Hot Tracker (Pure Market)", "📊 Market Flow Dashboard"])
+page = st.sidebar.radio("Go to Page", ["🚀 SUPER INTRADAY", "🔥 Intraday Hot Tracker (Pure Market)", "📊 Market Flow Dashboard"])
 
-# Streamlit Session State for Modal Chart View
 if "selected_stock" not in st.session_state:
     st.session_state.selected_stock = "RELIANCE"
 
 # ==========================================
-# PAGE 1: INTRADAY HOT TRACKER
+# PAGE 1: SUPER INTRADAY (NEW DEDICATED PAGE)
 # ==========================================
-if page == "🔥 Intraday Hot Tracker (Pure Market)":
-    
+if page == "🚀 SUPER INTRADAY":
+    st.markdown("<h2 style='color:#00ff7f;'>🚀 SUPER INTRADAY MOVER & ORDER BLOCK SCANNER</h2>", unsafe_allow_html=True)
+    st.caption("High Volume, Top Gainers aur Losers ko ek click me dekhein aur Order Block Zone highlight karein.")
+
     scan_limit = st.sidebar.slider("Live Scan Range (Stocks Count)", min_value=100, max_value=len(ALL_NSE_SYMBOLS), value=200, step=100)
     
-    with st.spinner("Processing live market volume, open interest, and trend metrics..."):
+    with st.spinner("Processing Super Intraday volume surge and price trends..."):
         df_market = fetch_live_market_data(ALL_NSE_SYMBOLS, limit=scan_limit)
 
     if not df_market.empty:
-        # OVERALL MARKET DIRECTION CALCULATION
+        # OVERALL MARKET DIRECTION AT TOP
         positive_count = len(df_market[df_market["P_Change"] > 0])
         total_count = len(df_market)
         bullish_pct = round((positive_count / total_count) * 100, 1) if total_count > 0 else 50
@@ -104,7 +104,102 @@ if page == "🔥 Intraday Hot Tracker (Pure Market)":
         market_dir = "BULLISH 🟢" if bullish_pct >= 50 else "BEARISH 🔴"
         dir_color = "#00ff7f" if bullish_pct >= 50 else "#ff3366"
 
-        # TOP BAR: OVERALL MARKET DIRECTION & METRICS
+        st.markdown(
+            f"""
+            <div style="background-color:#131b2e; border:1px solid #1e293b; padding:15px; border-radius:12px; margin-bottom:15px; display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <span style="color:#94a3b8; font-size:12px; font-weight:bold;">OVERALL MARKET DIRECTION</span>
+                    <h2 style="color:{dir_color}; margin:0; font-size:24px; font-weight:bold;">{market_dir} ({bullish_pct}% Advances)</h2>
+                </div>
+                <div style="text-align:right;">
+                    <span style="color:#94a3b8; font-size:12px;">ACTIVE SCANNER</span>
+                    <h3 style="color:#ffffff; margin:0; font-size:18px;">{total_count} / {len(ALL_NSE_SYMBOLS)} Live Stocks</h3>
+                </div>
+            </div>
+            """, 
+            unsafe_allow_html=True
+        )
+
+        # SUPER INTRADAY HIGH VOLUME & GAINERS/LOSERS CARDS
+        top_gainers = df_market.sort_values(by="P_Change", ascending=False).head(10)
+        top_losers = df_market.sort_values(by="P_Change", ascending=True).head(10)
+        high_volume = df_market.sort_values(by="Volume", ascending=False).head(10)
+
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            st.markdown("<h3 style='color:#00ff7f; font-size:16px;'>⚡ GAINERS (High Upward Movement)</h3>", unsafe_allow_html=True)
+            for _, row in top_gainers.iterrows():
+                if st.button(f"🟢 {row['Symbol']} | ₹{row['LTP']} (+{row['P_Change']}%)", key=f"super_g_{row['Symbol']}"):
+                    st.session_state.selected_stock = row['Symbol']
+                
+        with col2:
+            st.markdown("<h3 style='color:#ff3366; font-size:16px;'>🔻 LOSERS (High Downward Movement)</h3>", unsafe_allow_html=True)
+            for _, row in top_losers.iterrows():
+                if st.button(f"🔴 {row['Symbol']} | ₹{row['LTP']} ({row['P_Change']}%)", key=f"super_l_{row['Symbol']}"):
+                    st.session_state.selected_stock = row['Symbol']
+
+        with col3:
+            st.markdown("<h3 style='color:#3b82f6; font-size:16px;'>🔥 HIGH VOLUME SURGE SHARES</h3>", unsafe_allow_html=True)
+            for _, row in high_volume.iterrows():
+                if st.button(f"📊 {row['Symbol']} | Vol: {row['Volume_Str']} ({row['P_Change']}%)", key=f"super_v_{row['Symbol']}"):
+                    st.session_state.selected_stock = row['Symbol']
+
+        st.divider()
+
+        # LIVE CHART & ORDER BLOCK ZONE DISPLAY
+        st.markdown(f"### 📈 Live Chart & Order Block Zone: <span style='color:#00ff7f;'>{st.session_state.selected_stock}</span>", unsafe_allow_html=True)
+        
+        tv_symbol = f"NSE:{st.session_state.selected_stock}"
+        tv_widget = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+        </head>
+        <body style="margin:0; background-color:#0b0f19;">
+            <div id="tradingview_super_chart" style="height:520px; width:100%;"></div>
+            <script type="text/javascript">
+            new TradingView.widget({{
+                "autosize": true,
+                "symbol": "{tv_symbol}",
+                "interval": "5",
+                "timezone": "Asia/Kolkata",
+                "theme": "dark",
+                "style": "1",
+                "locale": "en",
+                "toolbar_bg": "#f1f3f6",
+                "enable_publishing": false,
+                "allow_symbol_change": true,
+                "container_id": "tradingview_super_chart",
+                "studies": [
+                    "STD;Volume",
+                    "STD;Order_Blocks"
+                ]
+            }});
+            </script>
+        </body>
+        </html>
+        """
+        components.html(tv_widget, height=540, scrolling=False)
+
+# ==========================================
+# PAGE 2: INTRADAY HOT TRACKER (PURE MARKET)
+# ==========================================
+elif page == "🔥 Intraday Hot Tracker (Pure Market)":
+    scan_limit = st.sidebar.slider("Live Scan Range (Stocks Count)", min_value=100, max_value=len(ALL_NSE_SYMBOLS), value=200, step=100)
+    
+    with st.spinner("Processing live market volume, open interest, and trend metrics..."):
+        df_market = fetch_live_market_data(ALL_NSE_SYMBOLS, limit=scan_limit)
+
+    if not df_market.empty:
+        positive_count = len(df_market[df_market["P_Change"] > 0])
+        total_count = len(df_market)
+        bullish_pct = round((positive_count / total_count) * 100, 1) if total_count > 0 else 50
+        
+        market_dir = "BULLISH 🟢" if bullish_pct >= 50 else "BEARISH 🔴"
+        dir_color = "#00ff7f" if bullish_pct >= 50 else "#ff3366"
+
         st.markdown(
             f"""
             <div style="background-color:#131b2e; border:1px solid #1e293b; padding:15px; border-radius:12px; margin-bottom:15px; display:flex; justify-content:space-between; align-items:center;">
@@ -121,7 +216,6 @@ if page == "🔥 Intraday Hot Tracker (Pure Market)":
             unsafe_allow_html=True
         )
 
-        # SPECIAL BUTTON FILTER FOR MCAP + VOLUME + RISING OI
         st.subheader("🎯 High Volatility & Market Filters")
         btn_filter = st.button("🔥 Market Cap + High Volume + Open Interest (OI) Gainers", use_container_width=True)
 
@@ -131,7 +225,6 @@ if page == "🔥 Intraday Hot Tracker (Pure Market)":
         else:
             display_df = df_market.sort_values(by="P_Change", ascending=False).head(10)
 
-        # TOP 3 INTRADAY CARDS
         top_gainers = df_market.sort_values(by="P_Change", ascending=False).head(10)
         top_losers = df_market.sort_values(by="P_Change", ascending=True).head(10)
         high_volume = df_market.sort_values(by="Volume", ascending=False).head(10)
@@ -158,7 +251,6 @@ if page == "🔥 Intraday Hot Tracker (Pure Market)":
 
         st.divider()
 
-        # LIVE CHART & ORDER BLOCK VIEW SECTION
         st.markdown(f"### 📊 Live TradingView Chart & Order Block Zone: <span style='color:#00ff7f;'>{st.session_state.selected_stock}</span>", unsafe_allow_html=True)
         
         tv_symbol = f"NSE:{st.session_state.selected_stock}"
@@ -195,11 +287,11 @@ if page == "🔥 Intraday Hot Tracker (Pure Market)":
         components.html(tv_widget, height=520, scrolling=False)
 
         st.divider()
-        st.subheader("🌐 Complete Scanned Shares Table (Filtered by MCap, Vol & OI)")
+        st.subheader("🌐 Complete Scanned Shares Table")
         st.dataframe(df_market.sort_values(by="Volume", ascending=False), use_container_width=True)
 
 # ==========================================
-# PAGE 2: MARKET FLOW DASHBOARD
+# PAGE 3: MARKET FLOW DASHBOARD
 # ==========================================
 else:
     html_code = """
