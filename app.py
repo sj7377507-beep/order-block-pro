@@ -1,3 +1,10 @@
+import streamlit as st
+
+# Page configuration
+st.set_page_config(page_title="Jarves Trading Dashboard", layout="wide")
+
+# HTML and Tailwind Dashboard Code
+html_code = """
 <!DOCTYPE html>
 <html lang="en" class="dark">
 <head>
@@ -43,7 +50,7 @@
                     <div class="w-3 h-3 bg-darkBg rounded-full absolute right-0.5"></div>
                 </div>
             </div>
-            <button class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-semibold px-3 py-1.5 rounded-full shadow-lg flex items-center space-x-1">
+            <button class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-semibold px-3 py-1.5 rounded-full shadow-lg flex items-center space-x-1">
                 <i class="fa-solid fa-lock-open text-[10px]"></i>
                 <span>Unlock</span>
             </button>
@@ -58,8 +65,8 @@
     <nav class="flex space-x-6 px-4 bg-cardBg border-b border-borderCol text-sm overflow-x-auto whitespace-nowrap">
         <a href="#" class="py-2.5 text-slate-400 hover:text-white font-medium">MARKET</a>
         <a href="#" class="py-2.5 text-neonGreen border-b-2 border-neonGreen font-semibold">FLOW</a>
-        <a href="#" class="py-2.5 text-slate-400 hover:text-white font-medium flex items-center space-x-1"><span class="text-neonGreen">▲</span> <span>TOP</span></a>
-        <a href="#" class="py-2.5 text-slate-400 hover:text-white font-medium flex items-center space-x-1"><span class="text-neonRed">▼</span> <span>TOP</span></a>
+        <a href="#" class="py-2.5 text-slate-400 hover:text-white font-medium flex items-center space-x-1"><span class="text-neonGreen">&#9650;</span> <span>TOP</span></a>
+        <a href="#" class="py-2.5 text-slate-400 hover:text-white font-medium flex items-center space-x-1"><span class="text-neonRed">&#9660;</span> <span>TOP</span></a>
     </nav>
 
     <!-- Main Container -->
@@ -67,7 +74,6 @@
         
         <!-- Ticker Cards Top Bar -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <!-- Nifty 50 -->
             <div class="bg-cardBg border border-borderCol p-3 rounded-xl flex justify-between items-center">
                 <div>
                     <div class="text-[11px] text-slate-400 font-medium">NIFTY 50</div>
@@ -76,7 +82,6 @@
                 </div>
                 <div class="text-neonGreen text-xl"><i class="fa-solid fa-chart-line"></i></div>
             </div>
-            <!-- Bank Nifty -->
             <div class="bg-cardBg border border-borderCol p-3 rounded-xl flex justify-between items-center">
                 <div>
                     <div class="text-[11px] text-slate-400 font-medium">BANKNIFTY</div>
@@ -85,7 +90,6 @@
                 </div>
                 <div class="text-neonGreen text-xl"><i class="fa-solid fa-chart-line"></i></div>
             </div>
-            <!-- Sensex -->
             <div class="bg-cardBg border border-borderCol p-3 rounded-xl flex justify-between items-center">
                 <div>
                     <div class="text-[11px] text-slate-400 font-medium">SENSEX</div>
@@ -96,181 +100,10 @@
             </div>
         </div>
 
-        <!-- Dashboard Grid Layout -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            
-            <!-- Market Flow Chart Section (Left & Center - 2 Cols) -->
-            <div class="lg:col-span-2 bg-cardBg border border-borderCol rounded-2xl p-4 flex flex-col justify-between">
-                <!-- Header -->
-                <div class="flex items-center justify-between mb-3">
-                    <div class="flex items-center space-x-2">
-                        <div class="text-neonGreen"><i class="fa-solid fa-chart-area text-lg"></i></div>
-                        <div>
-                            <h2 class="font-bold text-sm text-white">MARKET FLOW</h2>
-                            <p class="text-[11px] text-slate-400">Real-time Order Flow • NSE</p>
-                        </div>
-                    </div>
-                    <div class="flex items-center space-x-2">
-                        <span class="bg-emerald-950 text-neonGreen text-[10px] px-2 py-0.5 rounded-full flex items-center space-x-1 border border-emerald-800">
-                            <span class="w-1.5 h-1.5 bg-neonGreen rounded-full animate-pulse"></span>
-                            <span>Live</span>
-                        </span>
-                        <select class="bg-slate-800 text-slate-300 text-xs px-2 py-1 rounded border border-borderCol outline-none">
-                            <option>NSE</option>
-                            <option>BSE</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- Main Flow Mock Graphic Area -->
-                <div class="relative bg-darkBg/60 border border-borderCol rounded-xl h-64 p-3 flex flex-col justify-between overflow-hidden">
-                    <!-- Price Movement Axis labels -->
-                    <div class="absolute left-2 top-2 bottom-2 flex flex-col justify-between text-[10px] text-slate-400 font-mono">
-                        <span>+4.5%</span>
-                        <span>+3.0%</span>
-                        <span>+1.5%</span>
-                        <span class="text-white font-bold">0.0%</span>
-                        <span>-1.5%</span>
-                        <span>-3.0%</span>
-                        <span>-4.5%</span>
-                    </div>
-                    
-                    <!-- Zone Badges -->
-                    <div class="flex justify-between items-start z-10 pl-8">
-                        <span class="bg-emerald-950/80 text-neonGreen text-[10px] font-semibold px-2.5 py-1 rounded border border-emerald-800">▲ BULLISH ZONE</span>
-                        <span class="bg-emerald-950/80 text-neonGreen text-[10px] font-semibold px-2.5 py-1 rounded border border-emerald-800">▲ TOP</span>
-                    </div>
-
-                    <!-- Decorative Glowing Flow Path lines placeholder -->
-                    <div class="absolute inset-0 flex items-center justify-center opacity-40 pointer-events-none">
-                        <svg class="w-full h-full" viewBox="0 0 500 200" fill="none">
-                            <path d="M50 100 Q 200 20, 450 40" stroke="#00ff7f" stroke-width="2" stroke-dasharray="4 2"/>
-                            <path d="M50 100 Q 250 100, 450 100" stroke="#ffffff" stroke-width="1.5"/>
-                            <path d="M50 100 Q 200 180, 450 160" stroke="#ff3366" stroke-width="2" stroke-dasharray="4 2"/>
-                        </svg>
-                    </div>
-
-                    <div class="flex justify-between items-end z-10 pl-8">
-                        <span class="bg-rose-950/80 text-neonRed text-[10px] font-semibold px-2.5 py-1 rounded border border-rose-900">▼ BEARISH ZONE</span>
-                        <span class="bg-rose-950/80 text-neonRed text-[10px] font-semibold px-2.5 py-1 rounded border border-rose-900">▼ BOTTOM</span>
-                    </div>
-                </div>
-
-                <!-- Footer Legend -->
-                <div class="flex flex-wrap items-center justify-between mt-3 text-xs text-slate-400">
-                    <div class="flex items-center space-x-4">
-                        <span class="flex items-center space-x-1.5"><span class="w-2.5 h-2.5 bg-neonGreen rounded-full"></span><span>Bullish Flow</span></span>
-                        <span class="flex items-center space-x-1.5"><span class="w-2.5 h-2.5 bg-neonRed rounded-full"></span><span>Bearish Flow</span></span>
-                        <span class="flex items-center space-x-1.5"><span class="w-2.5 h-2.5 bg-blue-500 rounded-full"></span><span>Support / Resistance</span></span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Top Movers / Most Active Sidebar (Right - 1 Col) -->
-            <div class="bg-cardBg border border-borderCol rounded-2xl p-4 flex flex-col justify-between">
-                <div>
-                    <div class="flex items-center justify-between mb-3">
-                        <h3 class="font-bold text-sm text-white flex items-center space-x-2">
-                            <i class="fa-solid fa-gear text-neonGreen text-xs"></i>
-                            <span>TOP MOVERS</span>
-                        </h3>
-                    </div>
-                    <!-- Gainers / Losers Switcher -->
-                    <div class="grid grid-cols-2 bg-darkBg p-1 rounded-xl mb-3 border border-borderCol text-xs font-semibold text-center">
-                        <div class="bg-emerald-950 text-neonGreen py-1.5 rounded-lg border border-emerald-800 cursor-pointer">GAINERS</div>
-                        <div class="text-slate-400 py-1.5 cursor-pointer hover:text-white">LOSERS</div>
-                    </div>
-
-                    <!-- Stock List Table -->
-                    <div class="space-y-2 text-xs">
-                        <div class="flex justify-between text-slate-400 text-[10px] px-1 border-b border-borderCol pb-1">
-                            <span># SYMBOL</span>
-                            <span>%</span>
-                        </div>
-                        <!-- Row items -->
-                        <div class="flex items-center justify-between bg-darkBg/50 p-2 rounded-lg border border-borderCol/50 hover:border-emerald-500/50 cursor-pointer">
-                            <div class="flex items-center space-x-2 font-semibold text-white">
-                                <span class="text-slate-400 text-[10px]">1</span>
-                                <span class="w-2 h-2 bg-blue-500 rounded-full"></span>
-                                <span>RELIANCE</span>
-                            </div>
-                            <span class="text-neonGreen font-bold">+3.24% <i class="fa-solid fa-chevron-right text-[10px]"></i></span>
-                        </div>
-                        <div class="flex items-center justify-between bg-darkBg/50 p-2 rounded-lg border border-borderCol/50 hover:border-emerald-500/50 cursor-pointer">
-                            <div class="flex items-center space-x-2 font-semibold text-white">
-                                <span class="text-slate-400 text-[10px]">2</span>
-                                <span class="w-2 h-2 bg-blue-400 rounded-full"></span>
-                                <span>TCS</span>
-                            </div>
-                            <span class="text-neonGreen font-bold">+2.87% <i class="fa-solid fa-chevron-right text-[10px]"></i></span>
-                        </div>
-                        <div class="flex items-center justify-between bg-darkBg/50 p-2 rounded-lg border border-borderCol/50 hover:border-emerald-500/50 cursor-pointer">
-                            <div class="flex items-center space-x-2 font-semibold text-white">
-                                <span class="text-slate-400 text-[10px]">3</span>
-                                <span class="w-2 h-2 bg-indigo-500 rounded-full"></span>
-                                <span>HDFCBANK</span>
-                            </div>
-                            <span class="text-neonGreen font-bold">+2.31% <i class="fa-solid fa-chevron-right text-[10px]"></i></span>
-                        </div>
-                        <div class="flex items-center justify-between bg-darkBg/50 p-2 rounded-lg border border-borderCol/50 hover:border-emerald-500/50 cursor-pointer">
-                            <div class="flex items-center space-x-2 font-semibold text-white">
-                                <span class="text-slate-400 text-[10px]">4</span>
-                                <span class="w-2 h-2 bg-sky-500 rounded-full"></span>
-                                <span>INFY</span>
-                            </div>
-                            <span class="text-neonGreen font-bold">+1.95% <i class="fa-solid fa-chevron-right text-[10px]"></i></span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Most Active Mini Widget -->
-                <div class="mt-4 pt-3 border-t border-borderCol">
-                    <div class="text-xs font-bold text-white mb-2 flex items-center space-x-1">
-                        <i class="fa-solid fa-chart-bar text-neonGreen"></i>
-                        <span>MOST ACTIVE</span>
-                    </div>
-                    <div class="space-y-1.5 text-[11px]">
-                        <div class="flex justify-between items-center text-slate-300">
-                            <span>RELIANCE</span>
-                            <div class="w-20 bg-slate-800 h-1.5 rounded-full overflow-hidden"><div class="bg-neonGreen w-4/5 h-full"></div></div>
-                            <span class="text-slate-400">12.4M</span>
-                        </div>
-                        <div class="flex justify-between items-center text-slate-300">
-                            <span>TCS</span>
-                            <div class="w-20 bg-slate-800 h-1.5 rounded-full overflow-hidden"><div class="bg-neonGreen w-3/5 h-full"></div></div>
-                            <span class="text-slate-400">8.9M</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-
     </main>
-
-    <!-- Bottom Navigation Bar -->
-    <footer class="sticky bottom-0 bg-cardBg border-t border-borderCol py-2.5 px-6 flex justify-between items-center text-xs text-slate-400">
-        <a href="#" class="flex flex-col items-center text-neonGreen">
-            <i class="fa-solid fa-house text-base"></i>
-            <span class="text-[10px] mt-0.5">Home</span>
-        </a>
-        <a href="#" class="flex flex-col items-center hover:text-white">
-            <i class="fa-solid fa-magnifying-glass text-base"></i>
-            <span class="text-[10px] mt-0.5">Scanner</span>
-        </a>
-        <a href="#" class="flex flex-col items-center hover:text-white">
-            <i class="fa-regular fa-star text-base"></i>
-            <span class="text-[10px] mt-0.5">Watchlist</span>
-        </a>
-        <a href="#" class="flex flex-col items-center hover:text-white">
-            <i class="fa-solid fa-briefcase text-base"></i>
-            <span class="text-[10px] mt-0.5">Portfolio</span>
-        </a>
-        <a href="#" class="flex flex-col items-center hover:text-white">
-            <i class="fa-solid fa-gear text-base"></i>
-            <span class="text-[10px] mt-0.5">Settings</span>
-        </a>
-    </footer>
-
 </body>
 </html>
+"""
+
+# Render in Streamlit
+st.markdown(html_code, unsafe_allow_html=True)
