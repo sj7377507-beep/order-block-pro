@@ -1,9 +1,10 @@
 import streamlit as st
+import streamlit.components.v1 as components
 
 # Page configuration
 st.set_page_config(page_title="Jarves Trading Dashboard", layout="wide")
 
-# Full HTML and Tailwind Dashboard Code matching the app screenshot exactly
+# Full HTML and Tailwind Dashboard Code
 html_code = """
 <!DOCTYPE html>
 <html lang="en" class="dark">
@@ -103,7 +104,7 @@ html_code = """
         <!-- Dashboard Grid Layout -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
             
-            <!-- Market Flow Chart Section (2 Cols) -->
+            <!-- Market Flow Chart Section -->
             <div class="lg:col-span-2 bg-cardBg border border-borderCol rounded-2xl p-4 flex flex-col justify-between">
                 <div class="flex items-center justify-between mb-3">
                     <div class="flex items-center space-x-2">
@@ -146,18 +147,9 @@ html_code = """
                         <span class="bg-rose-950/80 text-neonRed text-[10px] font-semibold px-2.5 py-1 rounded border border-rose-900">&#9660; BOTTOM</span>
                     </div>
                 </div>
-
-                <!-- Footer Legend -->
-                <div class="flex items-center justify-between mt-3 text-xs text-slate-400">
-                    <div class="flex items-center space-x-4">
-                        <span class="flex items-center space-x-1.5"><span class="w-2.5 h-2.5 bg-neonGreen rounded-full"></span><span>Bullish Flow</span></span>
-                        <span class="flex items-center space-x-1.5"><span class="w-2.5 h-2.5 bg-neonRed rounded-full"></span><span>Bearish Flow</span></span>
-                        <span class="flex items-center space-x-1.5"><span class="w-2.5 h-2.5 bg-blue-500 rounded-full"></span><span>Support / Resistance</span></span>
-                    </div>
-                </div>
             </div>
 
-            <!-- Top Movers Sidebar (1 Col) -->
+            <!-- Top Movers Sidebar -->
             <div class="bg-cardBg border border-borderCol rounded-2xl p-4 flex flex-col justify-between">
                 <div>
                     <div class="flex items-center justify-between mb-3">
@@ -192,106 +184,10 @@ html_code = """
                             </div>
                             <span class="text-neonGreen font-bold">+2.87%</span>
                         </div>
-                        <div class="flex items-center justify-between bg-darkBg/50 p-2 rounded-lg border border-borderCol/50">
-                            <div class="flex items-center space-x-2 font-semibold text-white">
-                                <span class="text-slate-400 text-[10px]">3</span>
-                                <span class="w-2 h-2 bg-indigo-500 rounded-full"></span>
-                                <span>HDFCBANK</span>
-                            </div>
-                            <span class="text-neonGreen font-bold">+2.31%</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="mt-4 pt-3 border-t border-borderCol">
-                    <div class="text-xs font-bold text-white mb-2 flex items-center space-x-1">
-                        <i class="fa-solid fa-chart-bar text-neonGreen"></i>
-                        <span>MOST ACTIVE</span>
-                    </div>
-                    <div class="space-y-1.5 text-[11px]">
-                        <div class="flex justify-between items-center text-slate-300">
-                            <span>RELIANCE</span>
-                            <div class="w-20 bg-slate-800 h-1.5 rounded-full overflow-hidden"><div class="bg-neonGreen w-4/5 h-full"></div></div>
-                            <span class="text-slate-400">12.4M</span>
-                        </div>
                     </div>
                 </div>
             </div>
 
-        </div>
-
-        <!-- BULLISH CONTENDERS SECTION (Bottom Component) -->
-        <div class="bg-cardBg border border-borderCol rounded-2xl p-4">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-4 border-b border-borderCol pb-3">
-                <div class="flex items-center space-x-2">
-                    <div class="text-neonGreen"><i class="fa-solid fa-arrow-trend-up text-lg"></i></div>
-                    <div>
-                        <h2 class="font-bold text-sm text-white">BULLISH CONTENDERS</h2>
-                        <p class="text-[11px] text-slate-400">Strong Flow &bull; Order Blocks &bull; Momentum</p>
-                    </div>
-                </div>
-                <button class="mt-2 sm:mt-0 text-xs text-slate-300 bg-slate-800/80 hover:bg-slate-800 px-3 py-1.5 rounded-lg border border-borderCol flex items-center space-x-1.5">
-                    <i class="fa-regular fa-hand-pointer text-[10px] text-neonGreen"></i>
-                    <span>Tap a stock</span>
-                    <i class="fa-solid fa-arrow-right text-[10px]"></i>
-                    <span class="text-slate-400">View Details</span>
-                </button>
-            </div>
-
-            <!-- Content Grid for Bullish Contenders -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                <!-- Left Stock List -->
-                <div class="space-y-2 text-xs">
-                    <div class="flex items-center justify-between bg-darkBg/60 p-2.5 rounded-xl border border-borderCol">
-                        <div class="flex items-center space-x-2 font-semibold text-white">
-                            <span class="w-2.5 h-2.5 bg-blue-500 rounded-full"></span>
-                            <span>RELIANCE</span>
-                        </div>
-                        <span class="text-neonGreen font-bold">+3.24%</span>
-                    </div>
-                    <div class="flex items-center justify-between bg-darkBg/60 p-2.5 rounded-xl border border-borderCol">
-                        <div class="flex items-center space-x-2 font-semibold text-white">
-                            <span class="w-2.5 h-2.5 bg-blue-400 rounded-full"></span>
-                            <span>TCS</span>
-                        </div>
-                        <span class="text-neonGreen font-bold">+2.87%</span>
-                    </div>
-                    <div class="flex items-center justify-between bg-darkBg/60 p-2.5 rounded-xl border border-borderCol">
-                        <div class="flex items-center space-x-2 font-semibold text-white">
-                            <span class="w-2.5 h-2.5 bg-indigo-500 rounded-full"></span>
-                            <span>HDFCBANK</span>
-                        </div>
-                        <span class="text-neonGreen font-bold">+2.31%</span>
-                    </div>
-                    <div class="flex items-center justify-between bg-darkBg/60 p-2.5 rounded-xl border border-borderCol">
-                        <div class="flex items-center space-x-2 font-semibold text-white">
-                            <span class="w-2.5 h-2.5 bg-sky-500 rounded-full"></span>
-                            <span>INFY</span>
-                        </div>
-                        <span class="text-neonGreen font-bold">+1.95%</span>
-                    </div>
-                    <div class="flex items-center justify-between bg-darkBg/60 p-2.5 rounded-xl border border-borderCol">
-                        <div class="flex items-center space-x-2 font-semibold text-white">
-                            <span class="w-2.5 h-2.5 bg-red-400 rounded-full"></span>
-                            <span>ICICIBANK</span>
-                        </div>
-                        <span class="text-neonGreen font-bold">+1.82%</span>
-                    </div>
-                </div>
-
-                <!-- Right Order Block Zone Mini Chart Box -->
-                <div class="lg:col-span-2 relative bg-darkBg/60 border border-borderCol rounded-xl h-48 p-3 flex flex-col justify-between overflow-hidden">
-                    <div class="flex justify-between items-center z-10">
-                        <span class="text-[10px] font-mono text-neonGreen font-semibold tracking-wider">ORDER BLOCK ZONE</span>
-                    </div>
-                    <div class="absolute right-2 top-2 bottom-2 flex flex-col justify-between text-[10px] text-slate-400 font-mono text-right">
-                        <span>+4.5%</span>
-                        <span>+3.0%</span>
-                        <span>+1.5%</span>
-                        <span class="text-white font-bold">0.0%</span>
-                    </div>
-                </div>
-            </div>
         </div>
 
     </main>
@@ -324,5 +220,5 @@ html_code = """
 </html>
 """
 
-# Render in Streamlit
-st.markdown(html_code, unsafe_allow_html=True)
+# Render full HTML component in Streamlit
+components.html(html_code, height=900, scrolling=True)
