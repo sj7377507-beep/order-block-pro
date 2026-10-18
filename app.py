@@ -328,7 +328,7 @@ with tab_market:
 with tab_flow:
     st.markdown("### LIVE MARKET FLOW")
     st.caption("This visualization ranks market movers. It is not exchange order-book depth and does not predict guaranteed price direction.")
-    st.plotly_chart(flow_figure(market), use_container_width=True, config={"displayModeBar":False})
+    st.plotly_chart(flow_figure(market), width='stretch', key="live_market_flow_chart")
     a,b,c = st.columns(3)
     a.metric("Shares scanned", len(market))
     b.metric("Positive movers", int((market["Change %"]>0).sum()))
