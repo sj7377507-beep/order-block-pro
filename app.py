@@ -4,6 +4,7 @@ import yfinance as yf
 import pandas as pd
 import requests
 import io
+import time
 
 # Page setup
 st.set_page_config(page_title="Jarves Trading Pro - Super Intraday Dashboard", layout="wide")
@@ -28,51 +29,65 @@ def get_all_nse_symbols():
 
 ALL_NSE_SYMBOLS = get_all_nse_symbols()
 
-@st.cache_data(ttl=60)
-def fetch_live_market_data(symbols_list, limit=2000):
-    """Ultra-fast bulk market data fetcher for entire NSE pool"""
-    sample_symbols = symbols_list[:limit]
+def fetch_live_market_data_with_progress(symbols_list):
+    """Full market bulk scan with live progress bar and percentage tracking"""
+    total_symbols = len(symbols_list)
     market_data = []
     
-    try:
-        data = yf.download(sample_symbols, period="2d", group_by="ticker", progress=False, threads=True)
-        for symbol in sample_symbols:
-            clean_sym = symbol.replace(".NS", "")
-            try:
-                if len(sample_symbols) == 1:
-                    df_sym = data
-                else:
-                    df_sym = data[symbol]
-                
-                if not df_sym.empty and len(df_sym) >= 1:
-                    close_prices = df_sym['Close'].dropna()
-                    if len(close_prices) >= 1:
-                        ltp = float(close_prices.iloc[-1])
-                        prev_close = float(close_prices.iloc[-2]) if len(close_prices) >= 2 else ltp
-                        change = ltp - prev_close
-                        p_change = (change / prev_close) * 100 if prev_close > 0 else 0
-                        
-                        volume = float(df_sym['Volume'].iloc[-1]) if 'Volume' in df_sym.columns and not df_sym['Volume'].empty else 0
-                        
-                        market_data.append({
-                            "Symbol": clean_sym,
-                            "LTP": round(ltp, 2),
-                            "Change": round(change, 2),
-                            "P_Change": round(p_change, 2),
-                            "Volume": int(volume),
-                            "Volume_Str": f"{round(volume/1000000, 2)}M" if volume >= 1000000 else f"{round(volume/1000, 1)}K",
-                            "MarketCap_Cr": 0,
-                            "Abs_Move": abs(p_change),
-                            "OI_Score": round(p_change * 1.5, 2)
-                        })
-            except Exception:
-                continue
-    except Exception:
-        pass
+    progress_text = st.empty()
+    my_bar = st.progress(0)
+    
+    # Batch downloading in chunks with progress tracking
+    chunk_size = 100
+    for i in range(0, total_symbols, chunk_size):
+        chunk = symbols_list[i:i + chunk_size]
+        pct = min(1.0, (i + len(chunk)) / total_symbols)
+        percent_int = int(pct * 100)
         
+        progress_text.markdown(f"**Scanning Market Data...** Progress: **{percent_int}%** ({i + len(chunk)} / {total_symbols} Shares Scanned)")
+        my_bar.progress(pct)
+        
+        try:
+            data = yf.download(chunk, period="2d", group_by="ticker", progress=False, threads=True)
+            for symbol in chunk:
+                clean_sym = symbol.replace(".NS", "")
+                try:
+                    if len(chunk) == 1:
+                        df_sym = data
+                    else:
+                        df_sym = data[symbol]
+                    
+                    if not df_sym.empty and len(df_sym) >= 1:
+                        close_prices = df_sym['Close'].dropna()
+                        if len(close_prices) >= 1:
+                            ltp = float(close_prices.iloc[-1])
+                            prev_close = float(close_prices.iloc[-2]) if len(close_prices) >= 2 else ltp
+                            change = ltp - prev_close
+                            p_change = (change / prev_close) * 100 if prev_close > 0 else 0
+                            
+                            volume = float(df_sym['Volume'].iloc[-1]) if 'Volume' in df_sym.columns and not df_sym['Volume'].empty else 0
+                            
+                            market_data.append({
+                                "Symbol": clean_sym,
+                                "LTP": round(ltp, 2),
+                                "Change": round(change, 2),
+                                "P_Change": round(p_change, 2),
+                                "Volume": int(volume),
+                                "Volume_Str": f"{round(volume/1000000, 2)}M" if volume >= 1000000 else f"{round(volume/1000, 1)}K",
+                                "MarketCap_Cr": 0,
+                                "Abs_Move": abs(p_change),
+                                "OI_Score": round(p_change * 1.5, 2)
+                            })
+                except Exception:
+                    continue
+        except Exception:
+            continue
+            
+    progress_text.empty()
+    my_bar.empty()
     return pd.DataFrame(market_data)
 
-# Navigation with Separate Top Volume Stocks Tab
+# Navigation
 st.sidebar.title("📌 Navigation")
 page = st.sidebar.radio("Go to Page", [
     "🚀 SUPER INTRADAY", 
@@ -92,10 +107,11 @@ if page == "🚀 SUPER INTRADAY":
     st.markdown("<h2 style='color:#00ff7f;'>🚀 SUPER INTRADAY FAST SCANNER (20 Bullish & 20 Bearish)</h2>", unsafe_allow_html=True)
     st.caption("Full market bulk scan with live market direction, 20 bullish stocks, 20 bearish stocks, and order block charts.")
 
-    scan_limit = st.sidebar.slider("Full Market Scan Range", min_value=100, max_value=len(ALL_NSE_SYMBOLS), value=1000, step=100)
-    
-    with st.spinner("Scanning full market data..."):
-        df_market = fetch_live_market_data(ALL_NSE_SYMBOLS, limit=scan_limit)
+    if st.button("🔄 Refresh Market Data", key="refresh_super"):
+        st.cache_data.clear()
+        st.rerun()
+
+    df_market = fetch_live_market_data_with_progress(ALL_NSE_SYMBOLS)
 
     if not df_market.empty:
         positive_count = len(df_market[df_market["P_Change"] > 0])
@@ -178,16 +194,17 @@ if page == "🚀 SUPER INTRADAY":
         st.warning("Data load ho raha hai, kripya thoda intezaar karein.")
 
 # ==========================================
-# PAGE 2: INSTANT MOVE (TOP 20 BIGGEST MOVES)
+# PAGE 2: INSTANT MOVE
 # ==========================================
 elif page == "⚡ Instant Move":
     st.markdown("<h2 style='color:#00ff7f;'>⚡ INSTANT MOVE SCANNER (Top 20 Explosive Movers)</h2>", unsafe_allow_html=True)
     st.caption("Automatically scanning entire NSE market pool for top 20 biggest price movements.")
 
-    scan_limit = st.sidebar.slider("Instant Move Scan Range", min_value=100, max_value=len(ALL_NSE_SYMBOLS), value=1000, step=100, key="instant_slider")
-    
-    with st.spinner("Scanning entire market for explosive moves..."):
-        df_market = fetch_live_market_data(ALL_NSE_SYMBOLS, limit=scan_limit)
+    if st.button("🔄 Refresh Market Data", key="refresh_instant"):
+        st.cache_data.clear()
+        st.rerun()
+
+    df_market = fetch_live_market_data_with_progress(ALL_NSE_SYMBOLS)
 
     if not df_market.empty:
         top_instant_moves = df_market.sort_values(by="Abs_Move", ascending=False).head(20)
@@ -243,16 +260,17 @@ elif page == "⚡ Instant Move":
         st.warning("Data load ho raha hai, kripya thoda intezaar karein.")
 
 # ==========================================
-# PAGE 3: TOP VOLUME STOCKS (DEDICATED TAB)
+# PAGE 3: TOP VOLUME STOCKS (DEDICATED FULL MARKET TAB)
 # ==========================================
 elif page == "📊 Top Volume Stocks":
     st.markdown("<h2 style='color:#38bdf8;'>📊 TOP 20 HIGH VOLUME STOCKS SCANNER</h2>", unsafe_allow_html=True)
-    st.caption("Dedicated full market scan for top 20 stocks with the highest trading volume.")
+    st.caption("Dedicated full market scan (All 2000+ NSE Shares) for top 20 stocks with highest trading volume.")
 
-    scan_limit = st.sidebar.slider("Volume Scan Range", min_value=100, max_value=len(ALL_NSE_SYMBOLS), value=1000, step=100, key="vol_slider_page")
-    
-    with st.spinner("Scanning entire market for top volume stocks..."):
-        df_market = fetch_live_market_data(ALL_NSE_SYMBOLS, limit=scan_limit)
+    if st.button("🔄 Refresh Market Data", key="refresh_volume"):
+        st.cache_data.clear()
+        st.rerun()
+
+    df_market = fetch_live_market_data_with_progress(ALL_NSE_SYMBOLS)
 
     if not df_market.empty:
         top_volume_stocks = df_market.sort_values(by="Volume", ascending=False).head(20)
@@ -310,10 +328,11 @@ elif page == "📊 Top Volume Stocks":
 # PAGE 4: INTRADAY HOT TRACKER (PURE MARKET)
 # ==========================================
 elif page == "🔥 Intraday Hot Tracker (Pure Market)":
-    scan_limit = st.sidebar.slider("Live Scan Range", min_value=100, max_value=len(ALL_NSE_SYMBOLS), value=1000, step=100, key="hot_slider")
-    
-    with st.spinner("Processing live market volume and trends..."):
-        df_market = fetch_live_market_data(ALL_NSE_SYMBOLS, limit=scan_limit)
+    if st.button("🔄 Refresh Market Data", key="refresh_hot"):
+        st.cache_data.clear()
+        st.rerun()
+
+    df_market = fetch_live_market_data_with_progress(ALL_NSE_SYMBOLS)
 
     if not df_market.empty:
         positive_count = len(df_market[df_market["P_Change"] > 0])
