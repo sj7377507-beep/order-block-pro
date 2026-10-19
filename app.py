@@ -1,5 +1,4 @@
 import streamlit as st
-import streamlit.components.v1 as components
 import yfinance as yf
 import pandas as pd
 import requests
@@ -94,43 +93,32 @@ def fetch_live_market_data_with_progress(symbols_list):
     my_bar.empty()
     return pd.DataFrame(market_data)
 
-def render_advanced_order_block_card(row_data):
-    """Renders futuristic dark-neon HUD card matching order-block.com reference layout"""
+def render_native_order_block_card(row_data):
+    """Clean and error-free native Streamlit card rendering order block stats"""
     is_bullish = row_data['P_Change'] >= 0
-    badge_bg = "rgba(0, 255, 127, 0.15)" if is_bullish else "rgba(255, 51, 102, 0.15)"
-    badge_color = "#00ff7f" if is_bullish else "#ff3366"
+    color_prefix = "🟢" if is_bullish else "🔴"
     sign_str = "+" if is_bullish else ""
     
-    card_html = f"""
-    <div style="background: linear-gradient(135deg, #0f172a 0%, #0b0f19 100%); border: 1px solid #1e293b; border-radius: 16px; padding: 18px; margin-bottom: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <div>
-                <span style="font-size: 18px; font-weight: bold; color: #ffffff;">{row_data['Symbol']}</span>
-                <span style="font-size: 14px; color: #94a3b8; margin-left: 10px;">₹{row_data['LTP']}</span>
+    with st.container():
+        st.markdown(
+            f"""
+            <div style="background-color: #131b2e; border: 1px solid #1e293b; border-radius: 12px; padding: 15px; margin-bottom: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 18px; font-weight: bold; color: #ffffff;">{color_prefix} {row_data['Symbol']}</span>
+                    <span style="font-size: 16px; font-weight: bold; color: #00ff7f;">₹{row_data['LTP']} ({sign_str}{row_data['P_Change']}%)</span>
+                </div>
+                <hr style="margin: 8px 0; border-color: #1e293b;">
+                <div style="font-size: 12px; color: #94a3b8; display: flex; justify-content: space-between;">
+                    <span>⚡ Status: <b>{row_data['Status']}</b></span>
+                    <span>Vol: <b>{row_data['Volume_Str']}</b></span>
+                </div>
+                <div style="font-size: 11px; color: #cbd5e1; margin-top: 6px; background: #0b0f19; padding: 6px; border-radius: 6px;">
+                    Support Zone: <b style="color: #00ff7f;">{row_data['Zone']}</b> | S1: <b>{row_data['S1']}</b> | R1: <b>{row_data['R1']}</b> | R2: <b>{row_data['R2']}</b>
+                </div>
             </div>
-            <div style="background-color: {badge_bg}; color: {badge_color}; border: 1px solid {badge_color}; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold;">
-                {sign_str}{row_data['P_Change']}%
-            </div>
-        </div>
-        
-        <div style="display: flex; gap: 10px; margin-bottom: 12px;">
-            <div style="background: rgba(30, 41, 59, 0.7); padding: 4px 10px; border-radius: 6px; font-size: 11px; color: #38bdf8; font-weight: bold;">
-                ⚡ {row_data['Status']}
-            </div>
-            <div style="background: rgba(30, 41, 59, 0.7); padding: 4px 10px; border-radius: 6px; font-size: 11px; color: #cbd5e1;">
-                Vol: {row_data['Volume_Str']}
-            </div>
-        </div>
-        
-        <div style="background: #060911; border: 1px dashed #1e293b; border-radius: 10px; padding: 10px; font-size: 12px; display: flex; justify-content: space-between; color: #94a3b8;">
-            <div>SUPPORT ZONE: <span style="color: #00ff7f; font-weight: bold;">{row_data['Zone']}</span></div>
-            <div>S1: <span style="color: #facc15;">{row_data['S1']}</span></div>
-            <div>R1: <span style="color: #ff3366;">{row_data['R1']}</span></div>
-            <div>R2: <span style="color: #ff3366;">{row_data['R2']}</span></div>
-        </div>
-    </div>
-    """
-    st.markdown(card_html, unsafe_allow_html=True)
+            """,
+            unsafe_allow_html=True
+        )
 
 # Navigation
 st.sidebar.title("📌 Navigation")
@@ -190,15 +178,15 @@ if page == "🚀 SUPER INTRADAY":
         with col1:
             st.markdown(f"<h3 style='color:#00ff7f; font-size:16px;'>🟢 TOP 20 BULLISH STOCKS</h3>", unsafe_allow_html=True)
             for _, row in top_bullish.iterrows():
-                render_advanced_order_block_card(row)
-                if st.button(f"📊 Select & View Chart: {row['Symbol']}", key=f"super_bull_{row['Symbol']}"):
+                render_native_order_block_card(row)
+                if st.button(f"📊 View Chart: {row['Symbol']}", key=f"super_bull_{row['Symbol']}"):
                     st.session_state.selected_stock = row['Symbol']
                 
         with col2:
             st.markdown(f"<h3 style='color:#ff3366; font-size:16px;'>🔴 TOP 20 BEARISH STOCKS</h3>", unsafe_allow_html=True)
             for _, row in top_bearish.iterrows():
-                render_advanced_order_block_card(row)
-                if st.button(f"📊 Select & View Chart: {row['Symbol']}", key=f"super_bear_{row['Symbol']}"):
+                render_native_order_block_card(row)
+                if st.button(f"📊 View Chart: {row['Symbol']}", key=f"super_bear_{row['Symbol']}"):
                     st.session_state.selected_stock = row['Symbol']
 
         st.divider()
@@ -218,7 +206,7 @@ if page == "🚀 SUPER INTRADAY":
 # ==========================================
 elif page == "⚡ Instant Move":
     st.markdown("<h2 style='color:#00ff7f;'>⚡ INSTANT MOVE SCANNER (Top 20 Explosive Movers)</h2>", unsafe_allow_html=True)
-    st.caption("Automatically scanning entire NSE market pool for top 20 biggest price movements with order block HUD.")
+    st.caption("Automatically scanning entire NSE market pool for top 20 biggest price movements.")
 
     if st.button("🔄 Refresh Market Data", key="refresh_instant"):
         st.cache_data.clear()
@@ -232,8 +220,8 @@ elif page == "⚡ Instant Move":
         st.markdown(f"<h3 style='color:#00ff7f; font-size:16px;'>🔥 TOP 20 BIGGEST PRICE MOVERS (FULL MARKET)</h3>", unsafe_allow_html=True)
         
         for _, row in top_instant_moves.iterrows():
-            render_advanced_order_block_card(row)
-            if st.button(f"📊 Select & View Chart: {row['Symbol']}", key=f"instant_card_{row['Symbol']}"):
+            render_native_order_block_card(row)
+            if st.button(f"📊 View Chart: {row['Symbol']}", key=f"instant_card_{row['Symbol']}"):
                 st.session_state.selected_stock = row['Symbol']
 
         st.divider()
@@ -253,7 +241,7 @@ elif page == "⚡ Instant Move":
 # ==========================================
 elif page == "📊 Top Volume Stocks":
     st.markdown("<h2 style='color:#38bdf8;'>📊 TOP 20 HIGH VOLUME STOCKS SCANNER</h2>", unsafe_allow_html=True)
-    st.caption("Dedicated full market scan for top 20 stocks with highest trading volume and order block zones.")
+    st.caption("Dedicated full market scan for top 20 stocks with highest trading volume.")
 
     if st.button("🔄 Refresh Market Data", key="refresh_volume"):
         st.cache_data.clear()
@@ -267,8 +255,8 @@ elif page == "📊 Top Volume Stocks":
         st.markdown(f"<h3 style='color:#38bdf8; font-size:16px;'>📊 TOP 20 HIGH VOLUME STOCKS (FULL MARKET)</h3>", unsafe_allow_html=True)
         
         for _, row in top_volume_stocks.iterrows():
-            render_advanced_order_block_card(row)
-            if st.button(f"📊 Select & View Chart: {row['Symbol']}", key=f"vol_card_{row['Symbol']}"):
+            render_native_order_block_card(row)
+            if st.button(f"📊 View Chart: {row['Symbol']}", key=f"vol_card_{row['Symbol']}"):
                 st.session_state.selected_stock = row['Symbol']
 
         st.divider()
@@ -320,7 +308,7 @@ elif page == "🔥 Intraday Hot Tracker (Pure Market)":
         st.subheader("🎯 High Volatility & Market Filters")
         top_gainers = df_market.sort_values(by="P_Change", ascending=False).head(5)
         for _, row in top_gainers.iterrows():
-            render_advanced_order_block_card(row)
+            render_native_order_block_card(row)
 
         st.divider()
         st.subheader("🌐 Complete Scanned Shares Table")
