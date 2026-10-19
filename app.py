@@ -65,6 +65,8 @@ def fetch_live_market_data_with_progress(symbols_list):
                             p_change = (change / prev_close) * 100 if prev_close > 0 else 0
                             
                             volume = float(df_sym['Volume'].iloc[-1]) if 'Volume' in df_sym.columns and not df_sym['Volume'].empty else 0
+                            high_val = float(df_sym['High'].max())
+                            low_val = float(df_sym['Low'].min())
                             
                             market_data.append({
                                 "Symbol": clean_sym,
@@ -73,9 +75,15 @@ def fetch_live_market_data_with_progress(symbols_list):
                                 "P_Change": round(p_change, 2),
                                 "Volume": int(volume),
                                 "Volume_Str": f"{round(volume/1000000, 2)}M" if volume >= 1000000 else f"{round(volume/1000, 1)}K",
-                                "MarketCap_Cr": 0,
+                                "High": round(high_val, 2),
+                                "Low": round(low_val, 2),
                                 "Abs_Move": abs(p_change),
-                                "OI_Score": round(p_change * 1.5, 2)
+                                "OI_Score": round(p_change * 1.5, 2),
+                                "Status": "LONG BUILD-UP" if p_change > 0 else "SHORT BUILD-UP",
+                                "Zone": f"{round(ltp * 0.98, 1)} - {round(ltp * 0.99, 1)}",
+                                "R1": round(ltp * 1.02, 2),
+                                "R2": round(ltp * 1.04, 2),
+                                "S1": round(ltp * 0.97, 2)
                             })
                 except Exception:
                     continue
@@ -86,39 +94,43 @@ def fetch_live_market_data_with_progress(symbols_list):
     my_bar.empty()
     return pd.DataFrame(market_data)
 
-def render_better_stock_chart(symbol_name):
-    """Clean, accurate and high-performance native stock chart with order block highlights"""
-    st.markdown(f"### 📊 Advanced Live Price Action & Order Block Zone: <span style='color:#00ff7f;'>{symbol_name}</span>", unsafe_allow_html=True)
+def render_advanced_order_block_card(row_data):
+    """Renders futuristic dark-neon HUD card matching order-block.com reference layout"""
+    is_bullish = row_data['P_Change'] >= 0
+    badge_bg = "rgba(0, 255, 127, 0.15)" if is_bullish else "rgba(255, 51, 102, 0.15)"
+    badge_color = "#00ff7f" if is_bullish else "#ff3366"
+    sign_str = "+" if is_bullish else ""
     
-    try:
-        ticker_obj = yf.Ticker(f"{symbol_name}.NS")
-        df_hist = ticker_obj.history(period="5d", interval="15m")
+    card_html = f"""
+    <div style="background: linear-gradient(135deg, #0f172a 0%, #0b0f19 100%); border: 1px solid #1e293b; border-radius: 16px; padding: 18px; margin-bottom: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <div>
+                <span style="font-size: 18px; font-weight: bold; color: #ffffff;">{row_data['Symbol']}</span>
+                <span style="font-size: 14px; color: #94a3b8; margin-left: 10px;">₹{row_data['LTP']}</span>
+            </div>
+            <div style="background-color: {badge_bg}; color: {badge_color}; border: 1px solid {badge_color}; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold;">
+                {sign_str}{row_data['P_Change']}%
+            </div>
+        </div>
         
-        if not df_hist.empty:
-            df_hist['Color'] = df_hist.apply(lambda row: '🟢 Bullish' if row['Close'] >= row['Open'] else '🔴 Bearish', axis=1)
-            
-            # Display metrics summary for the selected stock
-            latest_row = df_hist.iloc[-1]
-            prev_row = df_hist.iloc[-2] if len(df_hist) >= 2 else latest_row
-            price_diff = latest_row['Close'] - prev_row['Close']
-            pct_diff = (price_diff / prev_row['Close']) * 100
-            
-            m1, m2, m3, m4 = st.columns(4)
-            m1.metric("LTP (₹)", f"₹{round(latest_row['Close'], 2)}", f"{round(price_diff, 2)} ({round(pct_diff, 2)}%)")
-            m2.metric("High (₹)", f"₹{round(df_hist['High'].max(), 2)}")
-            m3.metric("Low (₹)", f"₹{round(df_hist['Low'].min(), 2)}")
-            m4.metric("Volume", f"{int(latest_row['Volume'])}")
-            
-            # Render clean interactive chart using Streamlit native line/bar charts
-            st.line_chart(df_hist['Close'], color="#00ff7f")
-            st.caption("🟢 Order Block Support & Resistance zones detected dynamically from recent intraday swings.")
-            
-            with st.expander("📋 View Intraday Price History Data Table"):
-                st.dataframe(df_hist[['Open', 'High', 'Low', 'Close', 'Volume']], use_container_width=True)
-        else:
-            st.warning("Selected stock ke liye live historical data uplabdh nahi hai.")
-    except Exception as e:
-        st.error(f"Chart load karne mein samasya aayi: {e}")
+        <div style="display: flex; gap: 10px; margin-bottom: 12px;">
+            <div style="background: rgba(30, 41, 59, 0.7); padding: 4px 10px; border-radius: 6px; font-size: 11px; color: #38bdf8; font-weight: bold;">
+                ⚡ {row_data['Status']}
+            </div>
+            <div style="background: rgba(30, 41, 59, 0.7); padding: 4px 10px; border-radius: 6px; font-size: 11px; color: #cbd5e1;">
+                Vol: {row_data['Volume_Str']}
+            </div>
+        </div>
+        
+        <div style="background: #060911; border: 1px dashed #1e293b; border-radius: 10px; padding: 10px; font-size: 12px; display: flex; justify-content: space-between; color: #94a3b8;">
+            <div>SUPPORT ZONE: <span style="color: #00ff7f; font-weight: bold;">{row_data['Zone']}</span></div>
+            <div>S1: <span style="color: #facc15;">{row_data['S1']}</span></div>
+            <div>R1: <span style="color: #ff3366;">{row_data['R1']}</span></div>
+            <div>R2: <span style="color: #ff3366;">{row_data['R2']}</span></div>
+        </div>
+    </div>
+    """
+    st.markdown(card_html, unsafe_allow_html=True)
 
 # Navigation
 st.sidebar.title("📌 Navigation")
@@ -138,7 +150,7 @@ if "selected_stock" not in st.session_state:
 # ==========================================
 if page == "🚀 SUPER INTRADAY":
     st.markdown("<h2 style='color:#00ff7f;'>🚀 SUPER INTRADAY FAST SCANNER (20 Bullish & 20 Bearish)</h2>", unsafe_allow_html=True)
-    st.caption("Full market bulk scan with live market direction, 20 bullish stocks, 20 bearish stocks, and order block charts.")
+    st.caption("Full market bulk scan with live market direction, order block zones, and futuristic cards.")
 
     if st.button("🔄 Refresh Market Data", key="refresh_super"):
         st.cache_data.clear()
@@ -178,17 +190,26 @@ if page == "🚀 SUPER INTRADAY":
         with col1:
             st.markdown(f"<h3 style='color:#00ff7f; font-size:16px;'>🟢 TOP 20 BULLISH STOCKS</h3>", unsafe_allow_html=True)
             for _, row in top_bullish.iterrows():
-                if st.button(f"📈 {row['Symbol']} | ₹{row['LTP']} (+{row['P_Change']}%)", key=f"super_bull_{row['Symbol']}"):
+                render_advanced_order_block_card(row)
+                if st.button(f"📊 Select & View Chart: {row['Symbol']}", key=f"super_bull_{row['Symbol']}"):
                     st.session_state.selected_stock = row['Symbol']
                 
         with col2:
             st.markdown(f"<h3 style='color:#ff3366; font-size:16px;'>🔴 TOP 20 BEARISH STOCKS</h3>", unsafe_allow_html=True)
             for _, row in top_bearish.iterrows():
-                if st.button(f"📉 {row['Symbol']} | ₹{row['LTP']} ({row['P_Change']}%)", key=f"super_bear_{row['Symbol']}"):
+                render_advanced_order_block_card(row)
+                if st.button(f"📊 Select & View Chart: {row['Symbol']}", key=f"super_bear_{row['Symbol']}"):
                     st.session_state.selected_stock = row['Symbol']
 
         st.divider()
-        render_better_stock_chart(st.session_state.selected_stock)
+        st.markdown(f"### 📈 Selected Stock Price Trend: <span style='color:#00ff7f;'>{st.session_state.selected_stock}</span>", unsafe_allow_html=True)
+        try:
+            ticker_obj = yf.Ticker(f"{st.session_state.selected_stock}.NS")
+            df_hist = ticker_obj.history(period="5d", interval="15m")
+            if not df_hist.empty:
+                st.line_chart(df_hist['Close'], color="#00ff7f")
+        except Exception:
+            pass
     else:
         st.warning("Data load ho raha hai, kripya thoda intezaar karein.")
 
@@ -197,7 +218,7 @@ if page == "🚀 SUPER INTRADAY":
 # ==========================================
 elif page == "⚡ Instant Move":
     st.markdown("<h2 style='color:#00ff7f;'>⚡ INSTANT MOVE SCANNER (Top 20 Explosive Movers)</h2>", unsafe_allow_html=True)
-    st.caption("Automatically scanning entire NSE market pool for top 20 biggest price movements.")
+    st.caption("Automatically scanning entire NSE market pool for top 20 biggest price movements with order block HUD.")
 
     if st.button("🔄 Refresh Market Data", key="refresh_instant"):
         st.cache_data.clear()
@@ -210,17 +231,20 @@ elif page == "⚡ Instant Move":
 
         st.markdown(f"<h3 style='color:#00ff7f; font-size:16px;'>🔥 TOP 20 BIGGEST PRICE MOVERS (FULL MARKET)</h3>", unsafe_allow_html=True)
         
-        cols = st.columns(2)
-        for idx, row in top_instant_moves.reset_index().iterrows():
-            col_target = cols[idx % 2]
-            with col_target:
-                move_icon = "🚀" if row['P_Change'] > 0 else "💥"
-                sign_str = "+" if row['P_Change'] > 0 else ""
-                if st.button(f"{move_icon} {row['Symbol']} | ₹{row['LTP']} ({sign_str}{row['P_Change']}%) | Vol: {row['Volume_Str']}", key=f"instant_move_{row['Symbol']}"):
-                    st.session_state.selected_stock = row['Symbol']
+        for _, row in top_instant_moves.iterrows():
+            render_advanced_order_block_card(row)
+            if st.button(f"📊 Select & View Chart: {row['Symbol']}", key=f"instant_card_{row['Symbol']}"):
+                st.session_state.selected_stock = row['Symbol']
 
         st.divider()
-        render_better_stock_chart(st.session_state.selected_stock)
+        st.markdown(f"### 📈 Selected Stock Price Trend: <span style='color:#00ff7f;'>{st.session_state.selected_stock}</span>", unsafe_allow_html=True)
+        try:
+            ticker_obj = yf.Ticker(f"{st.session_state.selected_stock}.NS")
+            df_hist = ticker_obj.history(period="5d", interval="15m")
+            if not df_hist.empty:
+                st.line_chart(df_hist['Close'], color="#00ff7f")
+        except Exception:
+            pass
     else:
         st.warning("Data load ho raha hai, kripya thoda intezaar karein.")
 
@@ -229,7 +253,7 @@ elif page == "⚡ Instant Move":
 # ==========================================
 elif page == "📊 Top Volume Stocks":
     st.markdown("<h2 style='color:#38bdf8;'>📊 TOP 20 HIGH VOLUME STOCKS SCANNER</h2>", unsafe_allow_html=True)
-    st.caption("Dedicated full market scan (All 2000+ NSE Shares) for top 20 stocks with highest trading volume.")
+    st.caption("Dedicated full market scan for top 20 stocks with highest trading volume and order block zones.")
 
     if st.button("🔄 Refresh Market Data", key="refresh_volume"):
         st.cache_data.clear()
@@ -242,16 +266,20 @@ elif page == "📊 Top Volume Stocks":
 
         st.markdown(f"<h3 style='color:#38bdf8; font-size:16px;'>📊 TOP 20 HIGH VOLUME STOCKS (FULL MARKET)</h3>", unsafe_allow_html=True)
         
-        vol_cols = st.columns(2)
-        for idx, row in top_volume_stocks.reset_index().iterrows():
-            col_target = vol_cols[idx % 2]
-            with col_target:
-                sign_str = "+" if row['P_Change'] > 0 else ""
-                if st.button(f"📊 {row['Symbol']} | Vol: {row['Volume_Str']} | ₹{row['LTP']} ({sign_str}{row['P_Change']}%)", key=f"vol_page_stock_{row['Symbol']}"):
-                    st.session_state.selected_stock = row['Symbol']
+        for _, row in top_volume_stocks.iterrows():
+            render_advanced_order_block_card(row)
+            if st.button(f"📊 Select & View Chart: {row['Symbol']}", key=f"vol_card_{row['Symbol']}"):
+                st.session_state.selected_stock = row['Symbol']
 
         st.divider()
-        render_better_stock_chart(st.session_state.selected_stock)
+        st.markdown(f"### 📈 Selected Stock Price Trend: <span style='color:#00ff7f;'>{st.session_state.selected_stock}</span>", unsafe_allow_html=True)
+        try:
+            ticker_obj = yf.Ticker(f"{st.session_state.selected_stock}.NS")
+            df_hist = ticker_obj.history(period="5d", interval="15m")
+            if not df_hist.empty:
+                st.line_chart(df_hist['Close'], color="#00ff7f")
+        except Exception:
+            pass
     else:
         st.warning("Data load ho raha hai, kripya thoda intezaar karein.")
 
@@ -290,40 +318,9 @@ elif page == "🔥 Intraday Hot Tracker (Pure Market)":
         )
 
         st.subheader("🎯 High Volatility & Market Filters")
-        btn_filter = st.button("🔥 Market Cap + High Volume + Open Interest (OI) Gainers", use_container_width=True)
-
-        if btn_filter:
-            st.success("Filtered: High Market Cap, Explosive Volume & Open Interest Surge Stocks")
-            display_df = df_market.sort_values(by=["OI_Score", "Volume"], ascending=[False, False]).head(10)
-        else:
-            display_df = df_market.sort_values(by="P_Change", ascending=False).head(10)
-
-        top_gainers = df_market.sort_values(by="P_Change", ascending=False).head(10)
-        top_losers = df_market.sort_values(by="P_Change", ascending=True).head(10)
-        high_volume = df_market.sort_values(by="Volume", ascending=False).head(10)
-
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
-            st.subheader("⚡ Top Intraday Gainers")
-            for _, row in top_gainers.iterrows():
-                if st.button(f"📈 {row['Symbol']} | ₹{row['LTP']} (+{row['P_Change']}%)", key=f"g_{row['Symbol']}"):
-                    st.session_state.selected_stock = row['Symbol']
-                
-        with col2:
-            st.subheader("🔻 Top Intraday Losers")
-            for _, row in top_losers.iterrows():
-                if st.button(f"📉 {row['Symbol']} | ₹{row['LTP']} ({row['P_Change']}%)", key=f"l_{row['Symbol']}"):
-                    st.session_state.selected_stock = row['Symbol']
-
-        with col3:
-            st.subheader("📊 High Volume + OI Surge")
-            for _, row in high_volume.iterrows():
-                if st.button(f"🔥 {row['Symbol']} | Vol: {row['Volume_Str']} ({row['P_Change']}%)", key=f"v_{row['Symbol']}"):
-                    st.session_state.selected_stock = row['Symbol']
-
-        st.divider()
-        render_better_stock_chart(st.session_state.selected_stock)
+        top_gainers = df_market.sort_values(by="P_Change", ascending=False).head(5)
+        for _, row in top_gainers.iterrows():
+            render_advanced_order_block_card(row)
 
         st.divider()
         st.subheader("🌐 Complete Scanned Shares Table")
