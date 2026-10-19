@@ -1,4 +1,3 @@
-
 import streamlit as st
 import streamlit.components.v1 as components
 import yfinance as yf
@@ -30,8 +29,8 @@ def get_all_nse_symbols():
 ALL_NSE_SYMBOLS = get_all_nse_symbols()
 
 @st.cache_data(ttl=60)
-def fetch_live_market_data(symbols_list, limit=100):
-    """Ultra-fast bulk market data fetcher using yfinance download"""
+def fetch_live_market_data(symbols_list, limit=2000):
+    """Ultra-fast bulk market data fetcher for entire NSE pool"""
     sample_symbols = symbols_list[:limit]
     market_data = []
     
@@ -73,9 +72,15 @@ def fetch_live_market_data(symbols_list, limit=100):
         
     return pd.DataFrame(market_data)
 
-# Navigation with Instant Move explicitly included
+# Navigation with Separate Top Volume Stocks Tab
 st.sidebar.title("📌 Navigation")
-page = st.sidebar.radio("Go to Page", ["🚀 SUPER INTRADAY", "⚡ Instant Move", "🔥 Intraday Hot Tracker (Pure Market)", "📊 Market Flow Dashboard"])
+page = st.sidebar.radio("Go to Page", [
+    "🚀 SUPER INTRADAY", 
+    "⚡ Instant Move", 
+    "📊 Top Volume Stocks", 
+    "🔥 Intraday Hot Tracker (Pure Market)", 
+    "📊 Market Flow Dashboard"
+])
 
 if "selected_stock" not in st.session_state:
     st.session_state.selected_stock = "RELIANCE"
@@ -85,11 +90,11 @@ if "selected_stock" not in st.session_state:
 # ==========================================
 if page == "🚀 SUPER INTRADAY":
     st.markdown("<h2 style='color:#00ff7f;'>🚀 SUPER INTRADAY FAST SCANNER (20 Bullish & 20 Bearish)</h2>", unsafe_allow_html=True)
-    st.caption("Instant bulk market scan with live market direction, 20 bullish stocks, 20 bearish stocks, and order block charts.")
+    st.caption("Full market bulk scan with live market direction, 20 bullish stocks, 20 bearish stocks, and order block charts.")
 
-    scan_limit = st.sidebar.slider("Fast Scan Range (Stocks Count)", min_value=50, max_value=len(ALL_NSE_SYMBOLS), value=100, step=50)
+    scan_limit = st.sidebar.slider("Full Market Scan Range", min_value=100, max_value=len(ALL_NSE_SYMBOLS), value=1000, step=100)
     
-    with st.spinner("Instant bulk scanning market..."):
+    with st.spinner("Scanning full market data..."):
         df_market = fetch_live_market_data(ALL_NSE_SYMBOLS, limit=scan_limit)
 
     if not df_market.empty:
@@ -177,17 +182,17 @@ if page == "🚀 SUPER INTRADAY":
 # ==========================================
 elif page == "⚡ Instant Move":
     st.markdown("<h2 style='color:#00ff7f;'>⚡ INSTANT MOVE SCANNER (Top 20 Explosive Movers)</h2>", unsafe_allow_html=True)
-    st.caption("Automatically updates top 20 shares with the biggest intraday price movements (highest absolute % change).")
+    st.caption("Automatically scanning entire NSE market pool for top 20 biggest price movements.")
 
-    scan_limit = st.sidebar.slider("Fast Scan Range (Stocks Count)", min_value=50, max_value=len(ALL_NSE_SYMBOLS), value=100, step=50, key="instant_slider")
+    scan_limit = st.sidebar.slider("Instant Move Scan Range", min_value=100, max_value=len(ALL_NSE_SYMBOLS), value=1000, step=100, key="instant_slider")
     
-    with st.spinner("Scanning market for biggest moves..."):
+    with st.spinner("Scanning entire market for explosive moves..."):
         df_market = fetch_live_market_data(ALL_NSE_SYMBOLS, limit=scan_limit)
 
     if not df_market.empty:
         top_instant_moves = df_market.sort_values(by="Abs_Move", ascending=False).head(20)
 
-        st.markdown(f"<h3 style='color:#00ff7f; font-size:16px;'>🔥 TOP 20 BIGGEST PRICE MOVERS</h3>", unsafe_allow_html=True)
+        st.markdown(f"<h3 style='color:#00ff7f; font-size:16px;'>🔥 TOP 20 BIGGEST PRICE MOVERS (FULL MARKET)</h3>", unsafe_allow_html=True)
         
         cols = st.columns(2)
         for idx, row in top_instant_moves.reset_index().iterrows():
@@ -238,10 +243,74 @@ elif page == "⚡ Instant Move":
         st.warning("Data load ho raha hai, kripya thoda intezaar karein.")
 
 # ==========================================
-# PAGE 3: INTRADAY HOT TRACKER (PURE MARKET)
+# PAGE 3: TOP VOLUME STOCKS (DEDICATED TAB)
+# ==========================================
+elif page == "📊 Top Volume Stocks":
+    st.markdown("<h2 style='color:#38bdf8;'>📊 TOP 20 HIGH VOLUME STOCKS SCANNER</h2>", unsafe_allow_html=True)
+    st.caption("Dedicated full market scan for top 20 stocks with the highest trading volume.")
+
+    scan_limit = st.sidebar.slider("Volume Scan Range", min_value=100, max_value=len(ALL_NSE_SYMBOLS), value=1000, step=100, key="vol_slider_page")
+    
+    with st.spinner("Scanning entire market for top volume stocks..."):
+        df_market = fetch_live_market_data(ALL_NSE_SYMBOLS, limit=scan_limit)
+
+    if not df_market.empty:
+        top_volume_stocks = df_market.sort_values(by="Volume", ascending=False).head(20)
+
+        st.markdown(f"<h3 style='color:#38bdf8; font-size:16px;'>📊 TOP 20 HIGH VOLUME STOCKS (FULL MARKET)</h3>", unsafe_allow_html=True)
+        
+        vol_cols = st.columns(2)
+        for idx, row in top_volume_stocks.reset_index().iterrows():
+            col_target = vol_cols[idx % 2]
+            with col_target:
+                sign_str = "+" if row['P_Change'] > 0 else ""
+                if st.button(f"📊 {row['Symbol']} | Vol: {row['Volume_Str']} | ₹{row['LTP']} ({sign_str}{row['P_Change']}%)", key=f"vol_page_stock_{row['Symbol']}"):
+                    st.session_state.selected_stock = row['Symbol']
+
+        st.divider()
+
+        st.markdown(f"### 📈 Live Chart & Order Block Zone: <span style='color:#00ff7f;'>{st.session_state.selected_stock}</span>", unsafe_allow_html=True)
+        
+        tv_symbol = f"NSE:{st.session_state.selected_stock}"
+        tv_widget = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+        </head>
+        <body style="margin:0; background-color:#0b0f19;">
+            <div id="tradingview_vol_chart" style="height:520px; width:100%;"></div>
+            <script type="text/javascript">
+            new TradingView.widget({{
+                "autosize": true,
+                "symbol": "{tv_symbol}",
+                "interval": "5",
+                "timezone": "Asia/Kolkata",
+                "theme": "dark",
+                "style": "1",
+                "locale": "en",
+                "toolbar_bg": "#f1f3f6",
+                "enable_publishing": false,
+                "allow_symbol_change": true,
+                "container_id": "tradingview_vol_chart",
+                "studies": [
+                    "STD;Volume",
+                    "STD;Order_Blocks"
+                ]
+            }});
+            </script>
+        </body>
+        </html>
+        """
+        components.html(tv_widget, height=540, scrolling=False)
+    else:
+        st.warning("Data load ho raha hai, kripya thoda intezaar karein.")
+
+# ==========================================
+# PAGE 4: INTRADAY HOT TRACKER (PURE MARKET)
 # ==========================================
 elif page == "🔥 Intraday Hot Tracker (Pure Market)":
-    scan_limit = st.sidebar.slider("Live Scan Range (Stocks Count)", min_value=50, max_value=len(ALL_NSE_SYMBOLS), value=100, step=50, key="hot_slider")
+    scan_limit = st.sidebar.slider("Live Scan Range", min_value=100, max_value=len(ALL_NSE_SYMBOLS), value=1000, step=100, key="hot_slider")
     
     with st.spinner("Processing live market volume and trends..."):
         df_market = fetch_live_market_data(ALL_NSE_SYMBOLS, limit=scan_limit)
@@ -345,7 +414,7 @@ elif page == "🔥 Intraday Hot Tracker (Pure Market)":
         st.dataframe(df_market.sort_values(by="Volume", ascending=False), use_container_width=True)
 
 # ==========================================
-# PAGE 4: MARKET FLOW DASHBOARD
+# PAGE 5: MARKET FLOW DASHBOARD
 # ==========================================
 else:
     html_code = """
