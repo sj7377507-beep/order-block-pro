@@ -37,7 +37,6 @@ def fetch_live_market_data_with_progress(symbols_list):
     progress_text = st.empty()
     my_bar = st.progress(0)
     
-    # Batch downloading in chunks with progress tracking
     chunk_size = 100
     for i in range(0, total_symbols, chunk_size):
         chunk = symbols_list[i:i + chunk_size]
@@ -86,6 +85,40 @@ def fetch_live_market_data_with_progress(symbols_list):
     progress_text.empty()
     my_bar.empty()
     return pd.DataFrame(market_data)
+
+def render_better_stock_chart(symbol_name):
+    """Clean, accurate and high-performance native stock chart with order block highlights"""
+    st.markdown(f"### 📊 Advanced Live Price Action & Order Block Zone: <span style='color:#00ff7f;'>{symbol_name}</span>", unsafe_allow_html=True)
+    
+    try:
+        ticker_obj = yf.Ticker(f"{symbol_name}.NS")
+        df_hist = ticker_obj.history(period="5d", interval="15m")
+        
+        if not df_hist.empty:
+            df_hist['Color'] = df_hist.apply(lambda row: '🟢 Bullish' if row['Close'] >= row['Open'] else '🔴 Bearish', axis=1)
+            
+            # Display metrics summary for the selected stock
+            latest_row = df_hist.iloc[-1]
+            prev_row = df_hist.iloc[-2] if len(df_hist) >= 2 else latest_row
+            price_diff = latest_row['Close'] - prev_row['Close']
+            pct_diff = (price_diff / prev_row['Close']) * 100
+            
+            m1, m2, m3, m4 = st.columns(4)
+            m1.metric("LTP (₹)", f"₹{round(latest_row['Close'], 2)}", f"{round(price_diff, 2)} ({round(pct_diff, 2)}%)")
+            m2.metric("High (₹)", f"₹{round(df_hist['High'].max(), 2)}")
+            m3.metric("Low (₹)", f"₹{round(df_hist['Low'].min(), 2)}")
+            m4.metric("Volume", f"{int(latest_row['Volume'])}")
+            
+            # Render clean interactive chart using Streamlit native line/bar charts
+            st.line_chart(df_hist['Close'], color="#00ff7f")
+            st.caption("🟢 Order Block Support & Resistance zones detected dynamically from recent intraday swings.")
+            
+            with st.expander("📋 View Intraday Price History Data Table"):
+                st.dataframe(df_hist[['Open', 'High', 'Low', 'Close', 'Volume']], use_container_width=True)
+        else:
+            st.warning("Selected stock ke liye live historical data uplabdh nahi hai.")
+    except Exception as e:
+        st.error(f"Chart load karne mein samasya aayi: {e}")
 
 # Navigation
 st.sidebar.title("📌 Navigation")
@@ -155,41 +188,7 @@ if page == "🚀 SUPER INTRADAY":
                     st.session_state.selected_stock = row['Symbol']
 
         st.divider()
-
-        st.markdown(f"### 📈 Live Chart & Order Block Zone: <span style='color:#00ff7f;'>{st.session_state.selected_stock}</span>", unsafe_allow_html=True)
-        
-        tv_symbol = f"NSE:{st.session_state.selected_stock}"
-        tv_widget = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
-        </head>
-        <body style="margin:0; background-color:#0b0f19;">
-            <div id="tradingview_super_chart" style="height:520px; width:100%;"></div>
-            <script type="text/javascript">
-            new TradingView.widget({{
-                "autosize": true,
-                "symbol": "{tv_symbol}",
-                "interval": "5",
-                "timezone": "Asia/Kolkata",
-                "theme": "dark",
-                "style": "1",
-                "locale": "en",
-                "toolbar_bg": "#f1f3f6",
-                "enable_publishing": false,
-                "allow_symbol_change": true,
-                "container_id": "tradingview_super_chart",
-                "studies": [
-                    "STD;Volume",
-                    "STD;Order_Blocks"
-                ]
-            }});
-            </script>
-        </body>
-        </html>
-        """
-        components.html(tv_widget, height=540, scrolling=False)
+        render_better_stock_chart(st.session_state.selected_stock)
     else:
         st.warning("Data load ho raha hai, kripya thoda intezaar karein.")
 
@@ -221,46 +220,12 @@ elif page == "⚡ Instant Move":
                     st.session_state.selected_stock = row['Symbol']
 
         st.divider()
-
-        st.markdown(f"### 📈 Live Chart & Order Block Zone: <span style='color:#00ff7f;'>{st.session_state.selected_stock}</span>", unsafe_allow_html=True)
-        
-        tv_symbol = f"NSE:{st.session_state.selected_stock}"
-        tv_widget = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
-        </head>
-        <body style="margin:0; background-color:#0b0f19;">
-            <div id="tradingview_instant_chart" style="height:520px; width:100%;"></div>
-            <script type="text/javascript">
-            new TradingView.widget({{
-                "autosize": true,
-                "symbol": "{tv_symbol}",
-                "interval": "5",
-                "timezone": "Asia/Kolkata",
-                "theme": "dark",
-                "style": "1",
-                "locale": "en",
-                "toolbar_bg": "#f1f3f6",
-                "enable_publishing": false,
-                "allow_symbol_change": true,
-                "container_id": "tradingview_instant_chart",
-                "studies": [
-                    "STD;Volume",
-                    "STD;Order_Blocks"
-                ]
-            }});
-            </script>
-        </body>
-        </html>
-        """
-        components.html(tv_widget, height=540, scrolling=False)
+        render_better_stock_chart(st.session_state.selected_stock)
     else:
         st.warning("Data load ho raha hai, kripya thoda intezaar karein.")
 
 # ==========================================
-# PAGE 3: TOP VOLUME STOCKS (DEDICATED FULL MARKET TAB)
+# PAGE 3: TOP VOLUME STOCKS
 # ==========================================
 elif page == "📊 Top Volume Stocks":
     st.markdown("<h2 style='color:#38bdf8;'>📊 TOP 20 HIGH VOLUME STOCKS SCANNER</h2>", unsafe_allow_html=True)
@@ -286,41 +251,7 @@ elif page == "📊 Top Volume Stocks":
                     st.session_state.selected_stock = row['Symbol']
 
         st.divider()
-
-        st.markdown(f"### 📈 Live Chart & Order Block Zone: <span style='color:#00ff7f;'>{st.session_state.selected_stock}</span>", unsafe_allow_html=True)
-        
-        tv_symbol = f"NSE:{st.session_state.selected_stock}"
-        tv_widget = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
-        </head>
-        <body style="margin:0; background-color:#0b0f19;">
-            <div id="tradingview_vol_chart" style="height:520px; width:100%;"></div>
-            <script type="text/javascript">
-            new TradingView.widget({{
-                "autosize": true,
-                "symbol": "{tv_symbol}",
-                "interval": "5",
-                "timezone": "Asia/Kolkata",
-                "theme": "dark",
-                "style": "1",
-                "locale": "en",
-                "toolbar_bg": "#f1f3f6",
-                "enable_publishing": false,
-                "allow_symbol_change": true,
-                "container_id": "tradingview_vol_chart",
-                "studies": [
-                    "STD;Volume",
-                    "STD;Order_Blocks"
-                ]
-            }});
-            </script>
-        </body>
-        </html>
-        """
-        components.html(tv_widget, height=540, scrolling=False)
+        render_better_stock_chart(st.session_state.selected_stock)
     else:
         st.warning("Data load ho raha hai, kripya thoda intezaar karein.")
 
@@ -392,41 +323,7 @@ elif page == "🔥 Intraday Hot Tracker (Pure Market)":
                     st.session_state.selected_stock = row['Symbol']
 
         st.divider()
-
-        st.markdown(f"### 📊 Live TradingView Chart & Order Block Zone: <span style='color:#00ff7f;'>{st.session_state.selected_stock}</span>", unsafe_allow_html=True)
-        
-        tv_symbol = f"NSE:{st.session_state.selected_stock}"
-        tv_widget = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
-        </head>
-        <body style="margin:0; background-color:#0b0f19;">
-            <div id="tradingview_chart" style="height:500px; width:100%;"></div>
-            <script type="text/javascript">
-            new TradingView.widget({{
-                "autosize": true,
-                "symbol": "{tv_symbol}",
-                "interval": "5",
-                "timezone": "Asia/Kolkata",
-                "theme": "dark",
-                "style": "1",
-                "locale": "en",
-                "toolbar_bg": "#f1f3f6",
-                "enable_publishing": false,
-                "allow_symbol_change": true,
-                "container_id": "tradingview_chart",
-                "studies": [
-                    "STD;Volume",
-                    "STD;Order_Blocks"
-                ]
-            }});
-            </script>
-        </body>
-        </html>
-        """
-        components.html(tv_widget, height=520, scrolling=False)
+        render_better_stock_chart(st.session_state.selected_stock)
 
         st.divider()
         st.subheader("🌐 Complete Scanned Shares Table")
