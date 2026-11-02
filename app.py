@@ -74,7 +74,7 @@ def fetch_single_chunk(chunk):
     return chunk_data
 
 def fetch_live_market_data_with_progress(symbols_list):
-    """Full market bulk scan using multiple parallel threads (100-100 chunks simultaneously)"""
+    """Full market bulk scan using multiple parallel threads with live percentage progress bar"""
     total_symbols = len(symbols_list)
     market_data = []
     
@@ -84,8 +84,6 @@ def fetch_live_market_data_with_progress(symbols_list):
     chunk_size = 100
     chunks = [symbols_list[i:i + chunk_size] for i in range(0, total_symbols, chunk_size)]
     total_chunks = len(chunks)
-    
-    progress_text.markdown(f"**⚡ Multi-Threaded Scanning Active...** Scanning 2600+ shares across multiple parallel workers.")
     
     completed_chunks = 0
     
@@ -98,7 +96,7 @@ def fetch_live_market_data_with_progress(symbols_list):
             pct = min(1.0, completed_chunks / total_chunks)
             percent_int = int(pct * 100)
             
-            progress_text.markdown(f"**Scanning Market Data (Parallel Mode)...** Progress: **{percent_int}%** ({completed_chunks} / {total_chunks} Batch Scanned)")
+            progress_text.markdown(f"**Scanning Market Data...** Progress: **{percent_int}%** ({completed_chunks} / {total_chunks} Batch Scanned)")
             my_bar.progress(pct)
             
             try:
