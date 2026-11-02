@@ -31,10 +31,10 @@ def get_all_nse_symbols():
 ALL_NSE_SYMBOLS = get_all_nse_symbols()
 
 def fetch_single_chunk(chunk):
-    """Helper function to download and parse a single chunk of 100 symbols concurrently"""
+    """Helper function to download and parse a single chunk safely without hanging"""
     chunk_data = []
     try:
-        data = yf.download(chunk, period="2d", group_by="ticker", progress=False, threads=True)
+        data = yf.download(chunk, period="2d", group_by="ticker", progress=False, timeout=5)
         for symbol in chunk:
             clean_sym = symbol.replace(".NS", "")
             try:
@@ -46,7 +46,7 @@ def fetch_single_chunk(chunk):
                     else:
                         continue
                 
-                if not df_sym.empty and len(df_sym) >= 1:
+                if not df_sym.empty and 'Close' in df_sym.columns:
                     close_prices = df_sym['Close'].dropna()
                     if len(close_prices) >= 1:
                         ltp = float(close_prices.iloc[-1])
@@ -54,7 +54,7 @@ def fetch_single_chunk(chunk):
                         change = ltp - prev_close
                         p_change = (change / prev_close) * 100 if prev_close > 0 else 0
                         
-                        volume = float(df_sym['Volume'].iloc[-1]) if 'Volume' in df_sym.columns and not df_sym['Volume'].empty else 0
+                        volume = float(df_sym['Volume'].dropna().iloc[-1]) if 'Volume' in df_sym.columns and not df_sym['Volume'].dropna().empty else 0
                         
                         chunk_data.append({
                             "Symbol": clean_sym,
@@ -74,21 +74,20 @@ def fetch_single_chunk(chunk):
     return chunk_data
 
 def fetch_live_market_data_with_progress(symbols_list):
-    """Full market bulk scan using multiple parallel threads with live percentage progress bar"""
+    """Full market bulk scan using parallel threads with live percentage progress bar"""
     total_symbols = len(symbols_list)
     market_data = []
     
     progress_text = st.empty()
     my_bar = st.progress(0)
     
-    chunk_size = 100
+    chunk_size = 50  # Chunks ko optimize kiya hai taaki yfinance par load na pade
     chunks = [symbols_list[i:i + chunk_size] for i in range(0, total_symbols, chunk_size)]
     total_chunks = len(chunks)
     
     completed_chunks = 0
     
-    # Run all 100-share chunks concurrently using ThreadPoolExecutor
-    with ThreadPoolExecutor(max_workers=10) as executor:
+    with ThreadPoolExecutor(max_workers=5) as executor:
         future_to_chunk = {executor.submit(fetch_single_chunk, chunk): chunk for chunk in chunks}
         
         for future in as_completed(future_to_chunk):
@@ -121,7 +120,6 @@ def render_better_stock_chart(symbol_name):
         if not df_hist.empty:
             df_hist['Color'] = df_hist.apply(lambda row: '🟢 Bullish' if row['Close'] >= row['Open'] else '🔴 Bearish', axis=1)
             
-            # Display metrics summary for the selected stock
             latest_row = df_hist.iloc[-1]
             prev_row = df_hist.iloc[-2] if len(df_hist) >= 2 else latest_row
             price_diff = latest_row['Close'] - prev_row['Close']
@@ -133,7 +131,6 @@ def render_better_stock_chart(symbol_name):
             m3.metric("Low (₹)", f"₹{round(df_hist['Low'].min(), 2)}")
             m4.metric("Volume", f"{int(latest_row['Volume'])}")
             
-            # Render clean interactive chart using Streamlit native line/bar charts
             st.line_chart(df_hist['Close'], color="#00ff7f")
             st.caption("🟢 Order Block Support & Resistance zones detected dynamically from recent intraday swings.")
             
@@ -144,7 +141,6 @@ def render_better_stock_chart(symbol_name):
     except Exception as e:
         st.error(f"Chart load karne mein samasya aayi: {e}")
 
-# Navigation (Only first 2 scanners kept)
 st.sidebar.title("📌 Navigation")
 page = st.sidebar.radio("Go to Page", [
     "🚀 SUPER INTRADAY", 
@@ -154,9 +150,6 @@ page = st.sidebar.radio("Go to Page", [
 if "selected_stock" not in st.session_state:
     st.session_state.selected_stock = "RELIANCE"
 
-# ==========================================
-# PAGE 1: SUPER INTRADAY
-# ==========================================
 if page == "🚀 SUPER INTRADAY":
     st.markdown("<h2 style='color:#00ff7f;'>🚀 SUPER INTRADAY FAST SCANNER (20 Bullish & 20 Bearish)</h2>", unsafe_allow_html=True)
     st.caption("Full market bulk scan with live market direction, 20 bullish stocks, 20 bearish stocks, and order block charts.")
@@ -213,9 +206,6 @@ if page == "🚀 SUPER INTRADAY":
     else:
         st.warning("Data load ho raha hai, kripya thoda intezaar karein.")
 
-# ==========================================
-# PAGE 2: INSTANT MOVE
-# ==========================================
 elif page == "⚡ Instant Move":
     st.markdown("<h2 style='color:#00ff7f;'>⚡ INSTANT MOVE SCANNER (Top 20 Explosive Movers)</h2>", unsafe_allow_html=True)
     st.caption("Automatically scanning entire NSE market pool for top 20 biggest price movements.")
