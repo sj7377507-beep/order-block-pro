@@ -107,8 +107,20 @@ def _extract_symbol_frame(downloaded, symbol, symbols):
 def fetch_market_snapshot(symbols):
     records = []
     chunk_size = 80
+    total_symbols = max(len(symbols), 1)
+    progress_text = st.empty()
+    progress_bar = st.progress(0)
+
     for start in range(0, len(symbols), chunk_size):
         chunk = symbols[start:start + chunk_size]
+        scanned = min(start + len(chunk), total_symbols)
+        percentage = int(scanned / total_symbols * 100)
+        progress_text.markdown(
+            f"**Scanning NSE Market Data: {percentage}%** "
+            f"({scanned:,} / {total_symbols:,} stocks)"
+        )
+        progress_bar.progress(percentage)
+
         try:
             raw = yf.download(
                 chunk, period="5d", interval="1d",
@@ -141,6 +153,12 @@ def fetch_market_snapshot(symbols):
                 })
         except Exception:
             continue
+
+    progress_text.markdown("**Scanning NSE Market Data: 100% — Complete**")
+    progress_bar.progress(100)
+    time.sleep(0.2)
+    progress_text.empty()
+    progress_bar.empty()
     return pd.DataFrame(records)
 
 
@@ -341,12 +359,19 @@ def scan_momentum_market(symbols):
     errors = 0
     chunk_size = 35
 
+    progress_text = st.empty()
     progress = st.progress(0)
-    status = st.empty()
+    total_symbols = max(len(symbols), 1)
 
     for start in range(0, len(symbols), chunk_size):
         chunk = symbols[start:start + chunk_size]
-        status.write(f"Scanning NSE: {min(start + len(chunk), len(symbols))}/{len(symbols)}")
+        scanned = min(start + len(chunk), total_symbols)
+        percentage = int(scanned / total_symbols * 100)
+        progress_text.markdown(
+            f"**AI Momentum Scanner: {percentage}%** "
+            f"({scanned:,} / {total_symbols:,} stocks)"
+        )
+        progress.progress(percentage)
 
         try:
             intraday_raw = yf.download(
@@ -372,10 +397,11 @@ def scan_momentum_market(symbols):
         except Exception:
             errors += len(chunk)
 
-        progress.progress(min(1.0, (start + len(chunk)) / max(len(symbols), 1)))
-
+    progress_text.markdown("**AI Momentum Scanner: 100% — Complete**")
+    progress.progress(100)
+    time.sleep(0.2)
+    progress_text.empty()
     progress.empty()
-    status.empty()
     result = pd.DataFrame(results)
     return result, errors
 
